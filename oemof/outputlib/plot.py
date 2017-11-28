@@ -95,7 +95,8 @@ def set_datetime_ticks(ax, dates, tick_distance=None, number_autoticks=3,
 
     Parameters
     ----------
-    ax
+    ax : matplotlib.axes.Axes
+        An axes object of matplotlib
     dates : pandas.index
         The datetime index of the sequences.
     tick_distance : real
@@ -148,8 +149,9 @@ def divide_bus_columns(bus_label, columns):
             c for c in columns if (len(c[0]) > 1 and c[0][0] == bus_label)]}
 
 
-def io_plot(bus_label, df, ax=None, cdict=None, line_kwa=None, bar_kwa=None,
-            area_kwa=None, inorder=None, outorder=None, smooth=False):
+def io_plot(bus_label=None, df=None, df_in=None, df_out=None, ax=None,
+            cdict=None, line_kwa=None, bar_kwa=None, area_kwa=None,
+            inorder=None, outorder=None, smooth=False):
     r""" Plotting a combined bar and line plot of a bus to see the fitting of
     in- and out-coming flows of the bus balance.
 
@@ -158,9 +160,17 @@ def io_plot(bus_label, df, ax=None, cdict=None, line_kwa=None, bar_kwa=None,
     bus_label : str
         Label of the bus you want to plot.
     df : pandas.DataFrame
-        DateFrame to plot.
-    ax : matplotlib.axis
-        An axis object of matplotlib
+        DateFrame to plot. Output from
+        oemof.outputlib.views.node(results, bus_label)['sequences']. If df is
+        defined df_in and df_out will be ignored.
+    df_in : pandas.DataFrame
+        Table with input flows. You can pass df_in and df_out instead of the
+        full table and the label.
+    df_out : pandas.DataFrame
+        Table with output flows. You can pass df_in and df_out instead of the
+        full table and the label.
+    ax : matplotlib.axes.Axes
+        An axes object of matplotlib
     cdict : dictionary
         A dictionary that has all possible components as keys and its
         colors as items.
@@ -200,47 +210,48 @@ def io_plot(bus_label, df, ax=None, cdict=None, line_kwa=None, bar_kwa=None,
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
 
-    local_df = df.reset_index(drop=True)
+    if df is not None:
+        divided_columns = divide_bus_columns(bus_label, df.columns)
+        in_cols = divided_columns['in_cols']
+        out_cols = divided_columns['out_cols']
+        df_in = df[in_cols]
+        df_out = df[out_cols]
 
-    divided_columns = divide_bus_columns(bus_label, df.columns)
-    in_cols = divided_columns['in_cols']
-    out_cols = divided_columns['out_cols']
-
-    # Create a bar plot for all input flows
-    seq_in = local_df[in_cols]
-
+    # Create a bar (or area) plot for all input flows
     if inorder is not None:
-        seq_in = rearrange_df(seq_in, inorder)
+        df_in = rearrange_df(df_in, inorder)
+
+    df_in = df_in.reset_index(drop=True)
 
     if cdict is not None:
-        colors = color_from_dict(cdict, seq_in)
+        colors = color_from_dict(cdict, df_in)
     else:
         colors = None
 
     if smooth:
-        seq_in.plot(kind='area', linewidth=0, stacked=True,
-                    ax=ax, color=colors, **area_kwa)
+        df_in.plot(kind='area', linewidth=0, stacked=True,
+                   ax=ax, color=colors, **area_kwa)
     else:
-        seq_in.plot(kind='bar', linewidth=0, stacked=True, width=1,
-                    ax=ax, color=colors, **bar_kwa)
+        df_in.plot(kind='bar', linewidth=0, stacked=True, width=1,
+                   ax=ax, color=colors, **bar_kwa)
 
     # Create a line plot for all output flows
-    seq_out = local_df[out_cols]
-
     if outorder is not None:
-        seq_out = rearrange_df(seq_out, outorder)
+        df_out = rearrange_df(df_out, outorder)
+
+    df_out = df_out.reset_index(drop=True)
 
     # The following changes are made to have the bottom line on top layer
     # of all lines. Normally the bottom line is the first line that is
     # plotted and will be on the lowest layer. This is difficult to read.
-    new_df = pd.DataFrame(index=seq_out.index)
+    new_df = pd.DataFrame(index=df_out.index)
     n = 0
     tmp = 0
-    for col in seq_out.columns:
+    for col in df_out.columns:
         if n < 1:
-            new_df[col] = seq_out[col]
+            new_df[col] = df_out[col]
         else:
-            new_df[col] = seq_out[col] + tmp
+            new_df[col] = df_out[col] + tmp
         tmp = new_df[col]
         n += 1
     if outorder is None:
@@ -251,7 +262,7 @@ def io_plot(bus_label, df, ax=None, cdict=None, line_kwa=None, bar_kwa=None,
         new_df = new_df[lineorder]
 
     if cdict is not None:
-        colorlist = color_from_dict(cdict, seq_out)
+        colorlist = color_from_dict(cdict, df_out)
     else:
         colorlist = None
 
