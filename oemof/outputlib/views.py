@@ -76,7 +76,9 @@ def node_flows(param_results, current_node):
         if current_flow_type is None:
             continue
         flow_dict[current_flow_type][flow_nodes] = flow_attributes
-    flow_dict[FlowType.Single][(current_node, None)] = (
+
+    none_value = 'None' if isinstance(current_node, str) else None
+    flow_dict[FlowType.Single][(current_node, none_value)] = (
         param_results['nodes'][current_node])
     return flow_dict
 
@@ -84,7 +86,7 @@ def node_flows(param_results, current_node):
 def check_flow_type(nodes, current_node):
     if (
             nodes[0] == current_node and
-            nodes[1] is None
+            (nodes[1] is None or nodes[1] == 'None')
     ):
         return FlowType.Single
     elif nodes[1] == current_node:
@@ -163,7 +165,7 @@ def __get_flow_component(nodes, current_node):
     tuple is given, otherwise node itself s returned. Additionally, flow type
     of result is returned.
     """
-    if nodes[1] is None:
+    if nodes[1] is None or nodes[1] == 'None':
         return NodeFlow(nodes[0], FlowType.Single)
     elif nodes[0] == current_node:
         return NodeFlow(current_node.outputs[nodes[1]], FlowType.Output)
