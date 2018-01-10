@@ -60,6 +60,41 @@ def node(results, node):
     return filtered
 
 
+class FlowType(str, Enum):
+    """
+    Gives information on flow type
+    """
+    Single = 'single'
+    Input = 'input'
+    Output = 'output'
+
+
+def node_flows(param_results, current_node):
+    flow_dict = {flow_type: {} for flow_type in FlowType}
+    for flow_nodes, flow_attributes in param_results['flows'].items():
+        current_flow_type = check_flow_type(flow_nodes, current_node)
+        if current_flow_type is None:
+            continue
+        flow_dict[current_flow_type][flow_nodes] = flow_attributes
+    flow_dict[FlowType.Single][(current_node, None)] = (
+        param_results['nodes'][current_node])
+    return flow_dict
+
+
+def check_flow_type(nodes, current_node):
+    if (
+            nodes[0] == current_node and
+            nodes[1] is None
+    ):
+        return FlowType.Single
+    elif nodes[1] == current_node:
+        return FlowType.Input
+    elif nodes[0] == current_node:
+        return FlowType.Output
+    else:
+        return None
+
+
 class NodeOption(str, Enum):
     All = 'all'
     HasOutputs = 'has_outputs'
@@ -120,3 +155,17 @@ def get_node_by_name(results, *names):
     else:
         node_names = {str(n): n for n in nodes}
         return [node_names.get(n, None) for n in names]
+
+
+def __get_flow_component(nodes, current_node):
+    """
+    Returns input or output flow of node-tuple if two-dimensional
+    tuple is given, otherwise node itself s returned. Additionally, flow type
+    of result is returned.
+    """
+    if nodes[1] is None:
+        return NodeFlow(nodes[0], FlowType.Single)
+    elif nodes[0] == current_node:
+        return NodeFlow(current_node.outputs[nodes[1]], FlowType.Output)
+    else:
+        return NodeFlow(current_node.inputs[nodes[0]], FlowType.Input)
