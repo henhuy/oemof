@@ -71,7 +71,7 @@ class FlowType(str, Enum):
 
 def node_flows(param_results, current_node):
     flow_dict = {flow_type: {} for flow_type in FlowType}
-    for flow_nodes, flow_attributes in param_results['flows'].items():
+    for flow_nodes, flow_attributes in param_results.items():
         current_flow_type = check_flow_type(flow_nodes, current_node)
         if current_flow_type is None:
             continue
@@ -79,7 +79,7 @@ def node_flows(param_results, current_node):
 
     none_value = 'None' if isinstance(current_node, str) else None
     flow_dict[FlowType.Single][(current_node, none_value)] = (
-        param_results['nodes'][current_node])
+        param_results[current_node, none_value])
     return flow_dict
 
 
