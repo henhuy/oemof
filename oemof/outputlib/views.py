@@ -69,32 +69,33 @@ class FlowType(str, Enum):
     Output = 'output'
 
 
-def node_flows(param_results, current_node):
-    flow_dict = {flow_type: {} for flow_type in FlowType}
-    for flow_nodes, flow_attributes in param_results.items():
-        current_flow_type = check_flow_type(flow_nodes, current_node)
-        if current_flow_type is None:
-            continue
-        flow_dict[current_flow_type][flow_nodes] = flow_attributes
+def get_flow_type(node, results):
+    """
+    Categorize results keys by flow type (Single, Input, Output)
 
-    none_value = 'None' if isinstance(current_node, str) else None
-    flow_dict[FlowType.Single][(current_node, none_value)] = (
-        param_results[current_node, none_value])
-    return flow_dict
-
-
-def check_flow_type(nodes, current_node):
-    if (
-            nodes[0] == current_node and
-            (nodes[1] is None or nodes[1] == 'None')
-    ):
-        return FlowType.Single
-    elif nodes[1] == current_node:
-        return FlowType.Input
-    elif nodes[0] == current_node:
-        return FlowType.Output
-    else:
-        return None
+    Parameters
+    ----------
+    node: Node
+        Node of interest
+    results: dict
+        Results dict with tuple of nodes as key
+        (i.e. results, param_results, cost_results)
+    Returns
+    -------
+    dict: FlowType as key and tuple of nodes as value
+    """
+    flow_types = {ft: [] for ft in FlowType}
+    for nodes in results:
+        if (
+                nodes[0] == node and
+                (nodes[1] is None or nodes[1] == 'None')
+        ):
+            flow_types[FlowType.Single].append(nodes)
+        elif nodes[1] == node:
+            flow_types[FlowType.Input].append(nodes)
+        elif nodes[0] == node:
+            flow_types[FlowType.Output].append(nodes)
+    return flow_types
 
 
 class NodeOption(str, Enum):
@@ -157,17 +158,3 @@ def get_node_by_name(results, *names):
     else:
         node_names = {str(n): n for n in nodes}
         return [node_names.get(n, None) for n in names]
-
-
-def __get_flow_component(nodes, current_node):
-    """
-    Returns input or output flow of node-tuple if two-dimensional
-    tuple is given, otherwise node itself s returned. Additionally, flow type
-    of result is returned.
-    """
-    if nodes[1] is None or nodes[1] == 'None':
-        return NodeFlow(nodes[0], FlowType.Single)
-    elif nodes[0] == current_node:
-        return NodeFlow(current_node.outputs[nodes[1]], FlowType.Output)
-    else:
-        return NodeFlow(current_node.inputs[nodes[0]], FlowType.Input)
