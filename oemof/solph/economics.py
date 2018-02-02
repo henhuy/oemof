@@ -17,7 +17,7 @@ DEFAULT_COSTS = [
     Costs(
         'variable_costs',
         AttributeKey('sequences', 'flow'),
-        AttributeKey('sequences', 'variable_costs')
+        AttributeKey('scalars', 'variable_costs')
     ),
 ]
 
