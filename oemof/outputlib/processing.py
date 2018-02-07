@@ -3,10 +3,13 @@
 """Modules for providing a convenient data structure for solph results.
 
 Information about the possible usage is provided within the examples.
-"""
 
-__copyright__ = "oemof developer group"
-__license__ = "GPLv3"
+This file is part of project oemof (github.com/oemof/oemof). It's copyrighted by
+the contributors recorded in the version control history of the file, available
+from its original location oemof/oemof/outputlib/processing.py
+
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
 
 import pandas as pd
 from oemof.network import Node
@@ -260,9 +263,12 @@ def __separate_attrs(system, get_flows=False, exclude_none=True):
                 com['scalars'][key] = value
                 del com['sequences'][key]
             else:
-                if len(value) == 0:
-                    com['scalars'][key] = value.default
-                    del com['sequences'][key]
+                try:
+                    if not value.default_changed:
+                        com['scalars'][key] = value.default
+                        del com['sequences'][key]
+                except AttributeError:
+                    pass
 
     def remove_nones(com):
         for key, value in list(com['scalars'].items()):
@@ -313,6 +319,18 @@ def param_results(system, exclude_none=True, keys_as_str=False):
     The dictionary is keyed by the nodes e.g.
     `results['nodes'][idx]['scalars']`
     and flows e.g. `results['flows'][(n,n)]['sequences']`.
+
+    Parameters
+    ----------
+    system: Model or EnergySystem
+    exclude_none: bool
+        If True, all scalars and sequences containing None values are excluded
+    keys_as_str: bool
+        If True, nodes are stored as strings
+
+    Returns
+    -------
+    dict: Parameters for all nodes and flows
     """
 
     flow_data = __separate_attrs(system, True, exclude_none)
