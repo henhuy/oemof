@@ -212,6 +212,8 @@ def __separate_attrs(system, get_flows=False, exclude_none=True):
 
         for a in attrs:
             attr_value = getattr(com, a)
+            if attr_value.__class__.__module__ == 'oemof.solph.network':
+                continue
 
             # Iterate trough investment and add scalars and sequences with
             # "investment" prefix to component data:
