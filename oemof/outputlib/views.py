@@ -4,9 +4,9 @@
 
 Information about the possible usage is provided within the examples.
 
-This file is part of project oemof (github.com/oemof/oemof). It's copyrighted by
-the contributors recorded in the version control history of the file, available
-from its original location oemof/oemof/outputlib/views.py
+This file is part of project oemof (github.com/oemof/oemof). It's copyrighted
+by the contributors recorded in the version control history of the file,
+available from its original location oemof/oemof/outputlib/views.py
 
 SPDX-License-Identifier: GPL-3.0-or-later
 """
@@ -16,7 +16,7 @@ from enum import Enum
 from oemof.outputlib.processing import convert_keys_to_strings
 
 
-def node(results, node):
+def node(results, node, multiindex=False):
     """
     Obtain results for a single node e.g. a Bus or Component.
 
@@ -45,6 +45,13 @@ def node(results, node):
         filtered['scalars'].index = idx
         filtered['scalars'].sort_index(axis=0, inplace=True)
 
+        if multiindex:
+            idx = pd.MultiIndex.from_tuples(
+                [tuple([row[0][0], row[0][1], row[1]])
+                 for row in filtered['scalars'].index])
+            idx.set_names(['from', 'to', 'type'], inplace=True)
+            filtered['scalars'].index = idx
+
     # create a dataframe with tuples as column labels for sequences
     sequences = {k: v['sequences'] for k, v in results.items()
                  if node in k and not v['sequences'].empty}
@@ -59,6 +66,13 @@ def node(results, node):
         cols = [c for sublist in cols for c in sublist]
         filtered['sequences'].columns = cols
         filtered['sequences'].sort_index(axis=1, inplace=True)
+
+        if multiindex:
+            idx = pd.MultiIndex.from_tuples(
+                [tuple([col[0][0], col[0][1], col[1]])
+                 for col in filtered['sequences'].columns])
+            idx.set_names(['from', 'to', 'type'], inplace=True)
+            filtered['sequences'].columns = idx
 
     return filtered
 
@@ -113,8 +127,19 @@ def filter_nodes(results, option=NodeOption.All, exclude_busses=False):
     """
     Get set of nodes from results-dict for given node option
 
-    See NodeOption for all options. This function filters nodes from results
-    for special needs.
+    This function filters nodes from results for special needs. At the moment,
+    following options are available:
+        * NodeOption.All/'all':
+            Returns all nodes
+        * NodeOption.HasOutputs/'has_outputs':
+            Returns nodes with an output flow (eg. Transformer, Source)
+        * NodeOption.HasInputs/'has_inputs':
+            Returns nodes with an input flow (eg. Transformer, Sink)
+        * NodeOption.HasOnlyOutputs/'has_only_outputs':
+            Returns nodes having only output flows (eg. Source)
+        * NodeOption.HasOnlyInputs/'has_only_inputs':
+            Returns nodes having only input flows (eg. Sink)
+    Additionally, busses can be excluded setting 'exclude_busses' to True.
 
     Parameters
     ----------
