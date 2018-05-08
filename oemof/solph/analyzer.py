@@ -235,18 +235,9 @@ class Analyzer(object):
         return self.analysis.param_results[args]['sequences']
 
     @staticmethod
-    def _arg_is_flow(args):
-        return (
-            len(args) == 2 and
-            isinstance(args[0], Node) and
-            isinstance(args[1], Node)
-        )
-
-    @staticmethod
     def _arg_is_node(args):
         return (
                 len(args) == 2 and
-                isinstance(args[0], Node) and
                 args[1] is None
         )
 
@@ -322,11 +313,9 @@ class NodeBalanceAnalyzer(Analyzer):
     required_iterator = FlowNodeIterator
     depends_on = (SequenceFlowSumAnalyzer, FlowTypeAnalyzer)
 
-    node_type = Node
-
     def analyze(self, *args):
         super(NodeBalanceAnalyzer, self).analyze(*args)
-        if not (isinstance(args[0], self.node_type) and args[1] is None):
+        if args[1] is not None:
             return
 
         seq_result = self._get_dep_result(SequenceFlowSumAnalyzer)
@@ -347,10 +336,10 @@ class NodeBalanceAnalyzer(Analyzer):
 
 
 class BusBalanceAnalyzer(NodeBalanceAnalyzer):
-    node_type = Bus
-
-    # TODO: Check if NodeBalanceAnalyzer already exists
-    # If so, BusBalanceAnalyzer could simply filter results to
+    def analyze(self, *args):
+        if not isinstance(args[0], Bus):
+            return
+        super(BusBalanceAnalyzer, self).analyze(*args)
 
 
 class LCOEAnalyzer(Analyzer):
