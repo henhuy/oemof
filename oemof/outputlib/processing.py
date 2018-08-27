@@ -229,7 +229,8 @@ def __separate_attrs(system, get_flows=False, exclude_none=True):
         com_data = {'scalars': {}, 'sequences': {}}
 
         exclusions = ('__', '_', 'registry', 'inputs', 'outputs',
-                      'constraint_group')
+                      'constraint_group', 'inflow', 'main_flow', 'main_output',
+                      'tapped_output')  # FIXME: Quick dirty fix
         attrs = [i for i in dir(com)
                  if not (callable(i) or i.startswith(exclusions))]
 
