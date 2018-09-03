@@ -178,9 +178,10 @@ class Parameter_Result_Tests:
     def test_nodes_with_none_exclusion_old_name(self):
         param_results = processing.param_results(
             self.es, exclude_none=True)
-        param_results = processing.convert_keys_to_strings(param_results)
+        param_results = processing.convert_keys_to_strings(
+            param_results, keep_none_type=True)
         assert_series_equal(
-            param_results[('storage', 'None')]['scalars'],
+            param_results[('storage', None)]['scalars'],
             pandas.Series({
                 'initial_capacity': 0,
                 'invest_relation_input_capacity': 1/6,
@@ -198,7 +199,7 @@ class Parameter_Result_Tests:
             })
         )
         assert_frame_equal(
-            param_results[('storage', 'None')]['sequences'],
+            param_results[('storage', None)]['sequences'],
             pandas.DataFrame()
         )
 
