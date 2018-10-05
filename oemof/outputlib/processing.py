@@ -238,7 +238,7 @@ def __separate_attrs(system, get_flows=False, exclude_none=True):
 
         exclusions = ('__', '_', 'registry', 'inputs', 'outputs',
                       'constraint_group', 'inflow', 'main_flow', 'main_output',
-                      'tapped_output')  # FIXME: Quick dirty fix
+                      'tapped_output', 'minimal_load')  # FIXME: Quick dirty fix
         attrs = [i for i in dir(com)
                  if not (callable(i) or i.startswith(exclusions))]
 
