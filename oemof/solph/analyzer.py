@@ -31,11 +31,13 @@ class Analysis(object):
         self.param_results = param_results
         self.__iterator = (
             FlowNodeIterator if iterator is None else iterator)
-        self.__later = []
-        self.__chain = OrderedDict()
-        self.__former_chain = OrderedDict()
+        self.__waiting_line = None
+        self.__chain = None
+        self.__former_chain = None
+        self.clean()
 
     def clean(self):
+        self.__waiting_line = []
         self.__chain = OrderedDict()
         self.__former_chain = OrderedDict()
 
@@ -98,26 +100,16 @@ class Analysis(object):
         return True
 
     def add_analyzer(self, analyzer):
-        added_to_chain = True
         if not isinstance(analyzer, Analyzer):
             raise TypeError('Analyzer has to be an instance of '
                             '"analyzer.Analyzer" or its subclass')
-        if analyzer.__class__.__name__ in self.__chain:
-            warn(
-                'Analyzer "' + analyzer.__class__.__name__ +
-                '" already added to analysis. '
-                'Clear analysis if you want to create new analysis.'
-            )
+        if analyzer in self.__waiting_line:
+            return
         self.check_requirements(analyzer)
         self.check_iterator(analyzer)
-        no_dependecies = self.check_dependencies(analyzer)
-        if no_dependecies:
-            self.__chain[analyzer.__class__.__name__] = analyzer
-            analyzer.analysis = self
-        else:
-            self.__later.append(analyzer)
-            added_to_chain = False
-        return added_to_chain
+        for dependency in analyzer.depends_on + analyzer.depends_on_former:
+            self.add_analyzer(dependency())
+        self.__waiting_line.append(analyzer)
 
     def __analyze_chain(self):
         for analyzer in self.__chain.values():
@@ -128,21 +120,28 @@ class Analysis(object):
 
     def __prepare_next_chain(self):
         done = False
-        if not self.__later:
+        if not self.__waiting_line:
             return True
         added_analyzer = False
-        later = self.__later
-        self.__later = []
-        for i, analyzer in enumerate(later):
-            result = self.add_analyzer(analyzer)
-            if result:
+        current_waiting_line = self.__waiting_line
+        self.__waiting_line = []
+        for i, analyzer in enumerate(current_waiting_line):
+            no_dependecies = self.check_dependencies(analyzer)
+            if no_dependecies:
+                self.__chain[analyzer.__class__.__name__] = analyzer
+                analyzer.analysis = self
                 added_analyzer = True
+            else:
+                self.__waiting_line.append(analyzer)
         if not added_analyzer:
             raise FormerDependencyError(
                 'Could not iterate over all Analyzers. '
                 'Maybe some analyzers are missing for former dependencies? '
                 'Analyzers that could not be performed are: ' +
-                ','.join(map(lambda x: x.__class__.__name__, self.__later))
+                ','.join(map(
+                    lambda x: x.__class__.__name__,
+                    self.__waiting_line
+                ))
             )
         return done
 
@@ -231,10 +230,10 @@ class NodeIterator(Iterator):
 
 
 class Analyzer(object):
-    requires = None
+    requires = tuple()
     required_iterator = None
-    depends_on = None
-    depends_on_former = None
+    depends_on = tuple()
+    depends_on_former = tuple()
 
     def __init__(self):
         self.analysis = None
