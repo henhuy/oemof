@@ -34,7 +34,7 @@ def annuity(capex, n, wacc):
     return capex * (wacc * (1 + wacc) ** n) / ((1 + wacc) ** n - 1)
 
 
-LCOE = namedtuple('LCOE', ['invest', 'opex', 'fuel_cost'])
+LCOE = namedtuple("LCOE", ["invest", "opex", "fuel_cost"])
 
 
 def lcoe(energy_output, annualized_investment, opex, fuel_costs=0.0):
@@ -65,8 +65,5 @@ def lcoe(energy_output, annualized_investment, opex, fuel_costs=0.0):
     if energy_output == 0.0:
         return None
     return LCOE(
-        *map(
-            lambda x: x / energy_output,
-            [annualized_investment, opex, fuel_costs]
-        )
+        *map(lambda x: x / energy_output, [annualized_investment, opex, fuel_costs])
     )

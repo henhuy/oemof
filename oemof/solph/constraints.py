@@ -64,21 +64,30 @@ def emission_limit(om, flows=None, limit=None):
     if flows is None:
         flows = {}
         for (i, o) in om.flows:
-            if hasattr(om.flows[i, o], 'emission'):
+            if hasattr(om.flows[i, o], "emission"):
                 flows[(i, o)] = om.flows[i, o]
 
     else:
         for (i, o) in flows:
-            if not hasattr(flows[i, o], 'emission'):
-                raise ValueError(('Flow with source: {0} and target: {1} '
-                                 'has no attribute emission.').format(i.label,
-                                                                      o.label))
+            if not hasattr(flows[i, o], "emission"):
+                raise ValueError(
+                    (
+                        "Flow with source: {0} and target: {1} "
+                        "has no attribute emission."
+                    ).format(i.label, o.label)
+                )
 
     def emission_rule(m):
-        return (sum(m.flow[inflow, outflow, t] * m.timeincrement[t] *
-                    flows[inflow, outflow].emission
+        return (
+            sum(
+                m.flow[inflow, outflow, t]
+                * m.timeincrement[t]
+                * flows[inflow, outflow].emission
                 for (inflow, outflow) in flows
-                for t in m.TIMESTEPS) <= limit)
+                for t in m.TIMESTEPS
+            )
+            <= limit
+        )
 
     om.emission_limit = po.Constraint(rule=emission_rule)
 
@@ -143,8 +152,9 @@ def equate_variables(model, var1, var2, factor1=1, name=None):
     ...    om.InvestmentFlow.invest[line21, bel1])
     """
     if name is None:
-        name = '_'.join(["equate", str(var1), str(var2)])
+        name = "_".join(["equate", str(var1), str(var2)])
 
     def equate_variables_rule(m):
         return var1 * factor1 == var2
+
     setattr(model, name, po.Constraint(rule=equate_variables_rule))

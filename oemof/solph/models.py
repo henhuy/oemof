@@ -40,6 +40,7 @@ class BaseModel(po.ConcreteModel):
         `_add_parent_block_variables`, `_add_blocks`, `_add_objective`
 
     """
+
     CONSTRAINT_GROUPS = []
 
     def __init__(self, energysystem, **kwargs):
@@ -47,7 +48,7 @@ class BaseModel(po.ConcreteModel):
 
         # ########################  Arguments #################################
 
-        self.name = kwargs.get('name', type(self).__name__)
+        self.name = kwargs.get("name", type(self).__name__)
 
         self.es = energysystem
 
@@ -55,22 +56,23 @@ class BaseModel(po.ConcreteModel):
             self.timeincrement = sequence(self.es.timeindex.freq.nanos / 3.6e12)
         except AttributeError:
             logging.warning(
-                'Could not get timeincrement from pd.DateTimeIndex! ' +
-                'To avoid this warning, make sure the `freq` attribute of ' +
-                'your timeindex is not None. Setting timeincrement to 1...')
+                "Could not get timeincrement from pd.DateTimeIndex! "
+                + "To avoid this warning, make sure the `freq` attribute of "
+                + "your timeindex is not None. Setting timeincrement to 1..."
+            )
             self.timeincrement = sequence(1)
 
+        self.objective_weighting = kwargs.get("objective_weighting", self.timeincrement)
 
+        self._constraint_groups = type(self).CONSTRAINT_GROUPS + kwargs.get(
+            "constraint_groups", []
+        )
 
-        self.objective_weighting = kwargs.get('objective_weighting',
-                                              self.timeincrement)
-
-        self._constraint_groups = (type(self).CONSTRAINT_GROUPS +
-                                   kwargs.get('constraint_groups', []))
-
-        self._constraint_groups += [i for i in self.es.groups
-                                    if hasattr(i, 'CONSTRAINT_GROUP') and
-                                    i not in self._constraint_groups]
+        self._constraint_groups += [
+            i
+            for i in self.es.groups
+            if hasattr(i, "CONSTRAINT_GROUP") and i not in self._constraint_groups
+        ]
 
         self.flows = self.es.flows()
 
@@ -119,12 +121,12 @@ class BaseModel(po.ConcreteModel):
         their return value to the objective function.
         """
         if update:
-            self.del_component('objective')
+            self.del_component("objective")
 
         expr = 0
 
         for block in self.component_data_objects():
-            if hasattr(block, '_objective_expression'):
+            if hasattr(block, "_objective_expression"):
                 expr += block._objective_expression()
 
         self.objective = po.Objective(sense=sense, expr=expr)
@@ -147,7 +149,7 @@ class BaseModel(po.ConcreteModel):
 
         return result
 
-    def solve(self, solver='cbc', solver_io='lp', **kwargs):
+    def solve(self, solver="cbc", solver_io="lp", **kwargs):
         r""" Takes care of communication with solver to solve the model.
 
         Parameters
@@ -172,7 +174,7 @@ class BaseModel(po.ConcreteModel):
             {"method": 2}
 
         """
-        solve_kwargs = kwargs.get('solve_kwargs', {})
+        solve_kwargs = kwargs.get("solve_kwargs", {})
         solver_cmdline_options = kwargs.get("cmdline_options", {})
 
         opt = SolverFactory(solver, solver_io=solver_io)
@@ -184,8 +186,7 @@ class BaseModel(po.ConcreteModel):
         results = opt.solve(self, **solve_kwargs)
 
         status = results["Solver"][0]["Status"].key
-        termination_condition = \
-            results["Solver"][0]["Termination condition"].key
+        termination_condition = results["Solver"][0]["Termination condition"].key
 
         if status == "ok" and termination_condition == "optimal":
             logging.info("Optimization successful...")
@@ -193,14 +194,17 @@ class BaseModel(po.ConcreteModel):
             # storage results in result dictionary of energy system
             self.es.results = results
         elif status == "ok" and termination_condition == "unknown":
-            logging.warning("Optimization with unknown termination condition."
-                            " Writing output anyway...")
+            logging.warning(
+                "Optimization with unknown termination condition."
+                " Writing output anyway..."
+            )
             self.solutions.load_from(results)
             # storage results in result dictionary of energy system
             self.es.results = results
         elif status == "warning" and termination_condition == "other":
-            logging.warning("Optimization might be sub-optimal."
-                            " Writing output anyway...")
+            logging.warning(
+                "Optimization might be sub-optimal." " Writing output anyway..."
+            )
             self.solutions.load_from(results)
             # storage results in result dictionary of energy system
             self.es.results = results
@@ -209,7 +213,8 @@ class BaseModel(po.ConcreteModel):
             self.es.results = results
             logging.error(
                 "Optimization failed with status %s and terminal condition %s"
-                % (status, termination_condition))
+                % (status, termination_condition)
+            )
 
         return results
 
@@ -253,9 +258,14 @@ class Model(BaseModel):
         the corresponding flow object.
 
     """
-    CONSTRAINT_GROUPS = [blocks.Bus, blocks.Transformer,
-                         blocks.InvestmentFlow, blocks.Flow,
-                         blocks.NonConvexFlow]
+
+    CONSTRAINT_GROUPS = [
+        blocks.Bus,
+        blocks.Transformer,
+        blocks.InvestmentFlow,
+        blocks.Flow,
+        blocks.NonConvexFlow,
+    ]
 
     def __init__(self, energysystem, **kwargs):
         super().__init__(energysystem, **kwargs)
@@ -267,8 +277,7 @@ class Model(BaseModel):
         self.NODES = po.Set(initialize=[n for n in self.es.nodes])
 
         # pyomo set for timesteps of optimization problem
-        self.TIMESTEPS = po.Set(initialize=range(len(self.es.timeindex)),
-                                ordered=True)
+        self.TIMESTEPS = po.Set(initialize=range(len(self.es.timeindex)), ordered=True)
 
         # previous timesteps
         previous_timesteps = [x - 1 for x in self.TIMESTEPS]
@@ -277,38 +286,46 @@ class Model(BaseModel):
         self.previous_timesteps = dict(zip(self.TIMESTEPS, previous_timesteps))
 
         # pyomo set for all flows in the energy system graph
-        self.FLOWS = po.Set(initialize=self.flows.keys(),
-                            ordered=True, dimen=2)
+        self.FLOWS = po.Set(initialize=self.flows.keys(), ordered=True, dimen=2)
 
-        self.BIDIRECTIONAL_FLOWS = po.Set(initialize=[
-            k for (k, v) in self.flows.items() if hasattr(v, 'bidirectional')],
-                                          ordered=True, dimen=2,
-                                          within=self.FLOWS)
+        self.BIDIRECTIONAL_FLOWS = po.Set(
+            initialize=[
+                k for (k, v) in self.flows.items() if hasattr(v, "bidirectional")
+            ],
+            ordered=True,
+            dimen=2,
+            within=self.FLOWS,
+        )
 
         self.UNIDIRECTIONAL_FLOWS = po.Set(
-            initialize=[k for (k, v) in self.flows.items() if not
-                        hasattr(v, 'bidirectional')],
-            ordered=True, dimen=2, within=self.FLOWS)
+            initialize=[
+                k for (k, v) in self.flows.items() if not hasattr(v, "bidirectional")
+            ],
+            ordered=True,
+            dimen=2,
+            within=self.FLOWS,
+        )
 
     def _add_parent_block_variables(self):
         """
         """
-        self.flow = po.Var(self.FLOWS, self.TIMESTEPS,
-                           within=po.Reals)
+        self.flow = po.Var(self.FLOWS, self.TIMESTEPS, within=po.Reals)
 
         for (o, i) in self.FLOWS:
             for t in self.TIMESTEPS:
                 if (o, i) in self.UNIDIRECTIONAL_FLOWS:
                     self.flow[o, i, t].setlb(0)
                 if self.flows[o, i].nominal_value is not None:
-                    self.flow[o, i, t].setub(self.flows[o, i].max[t] *
-                                             self.flows[o, i].nominal_value)
+                    self.flow[o, i, t].setub(
+                        self.flows[o, i].max[t] * self.flows[o, i].nominal_value
+                    )
 
                     if self.flows[o, i].actual_value[t] is not None:
                         # pre- optimized value of flow variable
                         self.flow[o, i, t].value = (
-                            self.flows[o, i].actual_value[t] *
-                            self.flows[o, i].nominal_value)
+                            self.flows[o, i].actual_value[t]
+                            * self.flows[o, i].nominal_value
+                        )
                         # fix variable if flow is fixed
                         if self.flows[o, i].fixed:
                             self.flow[o, i, t].fix()
@@ -316,5 +333,5 @@ class Model(BaseModel):
                     if not self.flows[o, i].nonconvex:
                         # lower bound of flow variable
                         self.flow[o, i, t].setlb(
-                            self.flows[o, i].min[t] *
-                            self.flows[o, i].nominal_value)
+                            self.flows[o, i].min[t] * self.flows[o, i].nominal_value
+                        )

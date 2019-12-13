@@ -16,7 +16,7 @@ from enum import Enum
 from oemof.outputlib.processing import convert_keys_to_strings
 
 
-NONE_REPLACEMENT_STR = '_NONE_'
+NONE_REPLACEMENT_STR = "_NONE_"
 
 
 def node(results, node, multiindex=False, keep_none_type=False):
@@ -27,18 +27,18 @@ def node(results, node, multiindex=False, keep_none_type=False):
     Results are written into a dictionary which is keyed by 'scalars' and
     'sequences' holding respective data in a pandas Series and DataFrame.
     """
+
     def replace_none(col_list, reverse=False):
         replacement = (
-            (None, NONE_REPLACEMENT_STR) if reverse else
-            (NONE_REPLACEMENT_STR, None)
+            (None, NONE_REPLACEMENT_STR) if reverse else (NONE_REPLACEMENT_STR, None)
         )
         changed_col_list = [
             (
                 (
                     replacement[0] if n1 is replacement[1] else n1,
-                    replacement[0] if n2 is replacement[1] else n2
+                    replacement[0] if n2 is replacement[1] else n2,
                 ),
-                f
+                f,
             )
             for (n1, n2), f in col_list
         ]
@@ -51,59 +51,76 @@ def node(results, node, multiindex=False, keep_none_type=False):
     filtered = {}
 
     # create a series with tuples as index labels for scalars
-    scalars = {k: v['scalars'] for k, v in results.items()
-               if node in k and not v['scalars'].empty}
+    scalars = {
+        k: v["scalars"]
+        for k, v in results.items()
+        if node in k and not v["scalars"].empty
+    }
     if scalars:
         # aggregate data
-        filtered['scalars'] = pd.concat(scalars.values(), axis=0)
+        filtered["scalars"] = pd.concat(scalars.values(), axis=0)
         # assign index values
-        idx = {k: [c for c in v['scalars'].index]
-               for k, v in results.items()
-               if node in k and not v['scalars'].empty}
+        idx = {
+            k: [c for c in v["scalars"].index]
+            for k, v in results.items()
+            if node in k and not v["scalars"].empty
+        }
         idx = [tuple((k, m) for m in v) for k, v in idx.items()]
         idx = [i for sublist in idx for i in sublist]
-        filtered['scalars'].index = idx
+        filtered["scalars"].index = idx
 
         # Sort index
         # (if Nones are present, they have to be replaced while sorting)
         if keep_none_type:
-            filtered['scalars'].index = replace_none(
-                filtered['scalars'].index.tolist())
-        filtered['scalars'].sort_index(axis=0, inplace=True)
+            filtered["scalars"].index = replace_none(filtered["scalars"].index.tolist())
+        filtered["scalars"].sort_index(axis=0, inplace=True)
         if keep_none_type:
-            filtered['scalars'].index = replace_none(
-                filtered['scalars'].index.tolist(), True)
+            filtered["scalars"].index = replace_none(
+                filtered["scalars"].index.tolist(), True
+            )
 
         if multiindex:
             idx = pd.MultiIndex.from_tuples(
-                [tuple([row[0][0], row[0][1], row[1]])
-                 for row in filtered['scalars'].index])
-            idx.set_names(['from', 'to', 'type'], inplace=True)
-            filtered['scalars'].index = idx
+                [
+                    tuple([row[0][0], row[0][1], row[1]])
+                    for row in filtered["scalars"].index
+                ]
+            )
+            idx.set_names(["from", "to", "type"], inplace=True)
+            filtered["scalars"].index = idx
 
     # create a dataframe with tuples as column labels for sequences
-    sequences = {k: v['sequences'] for k, v in results.items()
-                 if node in k and not v['sequences'].empty}
+    sequences = {
+        k: v["sequences"]
+        for k, v in results.items()
+        if node in k and not v["sequences"].empty
+    }
     if sequences:
         # aggregate data
-        filtered['sequences'] = pd.concat(sequences.values(), axis=1)
+        filtered["sequences"] = pd.concat(sequences.values(), axis=1)
         # assign column names
-        cols = {k: [c for c in v['sequences'].columns]
-                for k, v in results.items()
-                if node in k and not v['sequences'].empty}
+        cols = {
+            k: [c for c in v["sequences"].columns]
+            for k, v in results.items()
+            if node in k and not v["sequences"].empty
+        }
         cols = [tuple((k, m) for m in v) for k, v in cols.items()]
         cols = [c for sublist in cols for c in sublist]
-        filtered['sequences'].columns = replace_none(cols)
-        filtered['sequences'].sort_index(axis=1, inplace=True)
-        filtered['sequences'].columns = replace_none(
-            filtered['sequences'].columns, True)
+        filtered["sequences"].columns = replace_none(cols)
+        filtered["sequences"].sort_index(axis=1, inplace=True)
+        filtered["sequences"].columns = replace_none(
+            filtered["sequences"].columns, True
+        )
 
         if multiindex:
             idx = pd.MultiIndex.from_tuples(
-                [tuple([col[0][0], col[0][1], col[1]])
-                 for col in filtered['sequences'].columns])
-            idx.set_names(['from', 'to', 'type'], inplace=True)
-            filtered['sequences'].columns = idx
+                [
+                    tuple([col[0][0], col[0][1], col[1]])
+                    for col in filtered["sequences"].columns
+                ]
+            )
+            idx.set_names(["from", "to", "type"], inplace=True)
+            filtered["sequences"].columns = idx
 
     return filtered
 
@@ -112,9 +129,10 @@ class FlowType(str, Enum):
     """
     Gives information on flow type
     """
-    Single = 'single'
-    Input = 'input'
-    Output = 'output'
+
+    Single = "single"
+    Input = "input"
+    Output = "output"
 
 
 def get_flow_type(node, results):
@@ -134,10 +152,7 @@ def get_flow_type(node, results):
     """
     flow_types = {ft: [] for ft in FlowType}
     for nodes in results:
-        if (
-                nodes[0] == node and
-                (nodes[1] is None or nodes[1] == 'None')
-        ):
+        if nodes[0] == node and (nodes[1] is None or nodes[1] == "None"):
             flow_types[FlowType.Single].append(nodes)
         elif nodes[1] == node:
             flow_types[FlowType.Input].append(nodes)
@@ -147,11 +162,11 @@ def get_flow_type(node, results):
 
 
 class NodeOption(str, Enum):
-    All = 'all'
-    HasOutputs = 'has_outputs'
-    HasInputs = 'has_inputs'
-    HasOnlyOutputs = 'has_only_outputs'
-    HasOnlyInputs = 'has_only_inputs'
+    All = "all"
+    HasOutputs = "has_outputs"
+    HasInputs = "has_inputs"
+    HasOnlyOutputs = "has_only_outputs"
+    HasOnlyInputs = "has_only_inputs"
 
 
 def filter_nodes(results, option=NodeOption.All, exclude_busses=False):
@@ -201,7 +216,7 @@ def filter_nodes(results, option=NodeOption.All, exclude_busses=False):
         raise ValueError('Invalid node option "' + str(option) + '"')
 
     if exclude_busses:
-        return {n for n in nodes if not n.__class__.__name__ == 'Bus'}
+        return {n for n in nodes if not n.__class__.__name__ == "Bus"}
     else:
         return nodes
 
@@ -226,17 +241,19 @@ def node_weight_by_type(results, node_type=None):
     """
     """
 
-    group = {k: v['sequences'] for k,v in results.items()
-             if isinstance(k[0], node_type) and k[1] is None}
+    group = {
+        k: v["sequences"]
+        for k, v in results.items()
+        if isinstance(k[0], node_type) and k[1] is None
+    }
     df = pd.concat(group.values(), axis=1)
-    cols = {k: [c for c in v.columns]
-            for k, v in group.items()}
+    cols = {k: [c for c in v.columns] for k, v in group.items()}
     cols = [tuple((k, m) for m in v) for k, v in cols.items()]
     cols = [c for sublist in cols for c in sublist]
     idx = pd.MultiIndex.from_tuples(
-                        [tuple([col[0][0], col[0][1], col[1]])
-                         for col in cols])
-    idx.set_names(['node_type', 'to', 'weight_type'], inplace=True)
+        [tuple([col[0][0], col[0][1], col[1]]) for col in cols]
+    )
+    idx.set_names(["node_type", "to", "weight_type"], inplace=True)
     df.columns = idx
     df.columns = df.columns.droplevel([1])
 

@@ -21,6 +21,7 @@ from weakref import WeakKeyDictionary as WeKeDi, WeakSet as WeSe
 class Inputs(MM):
     """ A special helper to map `n1.inputs[n2]` to `n2.outputs[n1]`.
     """
+
     def __init__(self, flows, target):
         self.flows = flows
         self.target = target
@@ -44,6 +45,7 @@ class Inputs(MM):
 class Outputs(MM):
     """ Helper that intercepts modifications to update `Inputs` symmetrically.
     """
+
     def __init__(self, flows, source):
         self.flows = flows
         self.source = source
@@ -73,6 +75,7 @@ class _Edges(MM):
     now it simply hides most of the dirty secrets of the :class:`Node` class.
 
     """
+
     _in_edges = WeKeDi()
     _out_edges = WeKeDi()
     # TODO: Either figure out how to use weak references here, or convert the
@@ -93,11 +96,11 @@ class _Edges(MM):
         # TODO: Refactor this to not have duplicate code.
         self._in_edges[target].remove(source)
         if not self._in_edges[target]:
-          del self._in_edges[target]
+            del self._in_edges[target]
 
         self._out_edges[source].remove(target)
         if not self._out_edges[source]:
-          del self._out_edges[source]
+            del self._out_edges[source]
 
         del self._flows[key]
 
@@ -116,11 +119,11 @@ class _Edges(MM):
         self._flows.__setitem__(key, value)
 
     def __call__(self, source=None, target=None):
-        if ((source is None) and (target is None)):
+        if (source is None) and (target is None):
             return None
-        if (source is None):
+        if source is None:
             return Inputs(self, target)
-        if (target is None):
+        if target is None:
             return Outputs(self, source)
         return self._flows[source, target]
 
@@ -199,23 +202,23 @@ class Node:
     def __setstate__(self, state):
         self._state = state
         args, kwargs = state
-        for optional in ['label']:
+        for optional in ["label"]:
             if optional in kwargs:
-                setattr(self, '_' + optional, kwargs[optional])
-        for i in kwargs.get('inputs', {}):
-            assert isinstance(i, Node), \
-                   "Input {} of {} not a Node, but a {}."\
-                   .format(i, self, type(i))
+                setattr(self, "_" + optional, kwargs[optional])
+        for i in kwargs.get("inputs", {}):
+            assert isinstance(i, Node), "Input {} of {} not a Node, but a {}.".format(
+                i, self, type(i)
+            )
             try:
-                flow[i, self] = kwargs['inputs'].get(i)
+                flow[i, self] = kwargs["inputs"].get(i)
             except AttributeError:
                 flow[i, self] = None
-        for o in kwargs.get('outputs', {}):
-            assert isinstance(o, Node), \
-                   "Output {} of {} not a Node, but a {}."\
-                   .format(o, self, type(o))
+        for o in kwargs.get("outputs", {}):
+            assert isinstance(o, Node), "Output {} of {} not a Node, but a {}.".format(
+                o, self, type(o)
+            )
             try:
-                flow[self, o] = kwargs['outputs'].get(o)
+                flow[self, o] = kwargs["outputs"].get(o)
             except AttributeError:
                 flow[self, o] = None
 
@@ -241,8 +244,11 @@ class Node:
         attribute holds the actual object passed as a parameter. Otherwise
         :py:`node.label` is a synonym for :py:`str(node)`.
         """
-        return (self._label if hasattr(self, "_label")
-                else "<{} #0x{:x}>".format(type(self).__name__, id(self)))
+        return (
+            self._label
+            if hasattr(self, "_label")
+            else "<{} #0x{:x}>".format(type(self).__name__, id(self))
+        )
 
     @property
     def inputs(self):
@@ -334,11 +340,12 @@ class Entity:
                 e_out.inputs.append(self)
         self.geo_data = kwargs.get("geo_data", None)
         self.regions = []
-        self.add_regions(kwargs.get('regions', []))
+        self.add_regions(kwargs.get("regions", []))
         if __class__.registry is not None:
             __class__.registry.add(self)
 
         # TODO: @Gunni Yupp! Add docstring.
+
     def add_regions(self, regions):
         """Add regions to self.regions
         """
@@ -365,8 +372,9 @@ def registry_changed_to(r):
 def temporarily_modifies_registry(function):
     """ Backup registry before and restore it after execution of `function`.
     """
+
     def result(*xs, **ks):
         with registry_disabled():
             return f(*xs, **ks)
-    return result
 
+    return result

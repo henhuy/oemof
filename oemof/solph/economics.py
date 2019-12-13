@@ -1,23 +1,22 @@
-
 import pandas
 from collections import namedtuple
 from oemof.outputlib import views
 from oemof.tools.economics import lcoe
 
 
-Costs = namedtuple('Costs', ['name', 'flow_key', 'param_key'])
-AttributeKey = namedtuple('CostKey', ['dimension', 'name'])
+Costs = namedtuple("Costs", ["name", "flow_key", "param_key"])
+AttributeKey = namedtuple("CostKey", ["dimension", "name"])
 
 DEFAULT_COSTS = [
     Costs(
-        'invest',
-        AttributeKey('scalars', 'invest'),
-        AttributeKey('scalars', 'investment_ep_costs')
+        "invest",
+        AttributeKey("scalars", "invest"),
+        AttributeKey("scalars", "investment_ep_costs"),
     ),
     Costs(
-        'variable_costs',
-        AttributeKey('sequences', 'flow'),
-        AttributeKey('scalars', 'variable_costs')
+        "variable_costs",
+        AttributeKey("sequences", "flow"),
+        AttributeKey("scalars", "variable_costs"),
     ),
 ]
 
@@ -45,6 +44,7 @@ def cost_results(results, param_results, costs=DEFAULT_COSTS):
         For each node tuple from param_results, calculated costs are returned
         as dict containing cost name as key and cost result as value.
     """
+
     def get_value(component, key):
         """
         Searches component for key
@@ -72,7 +72,7 @@ def cost_results(results, param_results, costs=DEFAULT_COSTS):
         value = dimension.get(key.name)
         if value is None:
             return None
-        if key.dimension == 'sequences':
+        if key.dimension == "sequences":
             if value[0] is None:
                 return None
             value = pandas.Series(value.data)
@@ -131,20 +131,18 @@ def calculate_lcoe(node, results, cost_results):
     flow_types = views.get_flow_type(node, results)
 
     # Get total output of node:
-    for output_nodes in flow_types['output']:
-        invest += cost_results[output_nodes].get('invest', 0.0)
-        variable_output_costs += cost_results[output_nodes].get(
-            'variable_costs', 0.0)
-        output += results[output_nodes]['sequences']['flow'].sum()
+    for output_nodes in flow_types["output"]:
+        invest += cost_results[output_nodes].get("invest", 0.0)
+        variable_output_costs += cost_results[output_nodes].get("variable_costs", 0.0)
+        output += results[output_nodes]["sequences"]["flow"].sum()
 
     # Get total input of node:
-    for input_nodes in flow_types['input']:
-        invest += cost_results[input_nodes].get('invest', 0.0)
-        variable_input_costs += cost_results[input_nodes].get(
-            'variable_costs', 0.0)
+    for input_nodes in flow_types["input"]:
+        invest += cost_results[input_nodes].get("invest", 0.0)
+        variable_input_costs += cost_results[input_nodes].get("variable_costs", 0.0)
 
     # Get total invest of node:
-    for single_nodes in flow_types['single']:
-        invest += cost_results[single_nodes].get('invest', 0.0)
+    for single_nodes in flow_types["single"]:
+        invest += cost_results[single_nodes].get("invest", 0.0)
 
     return lcoe(output, invest, variable_output_costs, variable_input_costs)

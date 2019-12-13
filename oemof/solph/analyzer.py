@@ -1,4 +1,3 @@
-
 """
 This module uses the visitor pattern.
 All visited elements either call a default function "analyze" or an
@@ -29,8 +28,7 @@ class Analysis(object):
     def __init__(self, results, param_results, iterator=None):
         self.results = results
         self.param_results = param_results
-        self.__iterator = (
-            FlowNodeIterator if iterator is None else iterator)
+        self.__iterator = FlowNodeIterator if iterator is None else iterator
         self.__waiting_line = None
         self.__chain = None
         self.__former_chain = None
@@ -46,12 +44,12 @@ class Analysis(object):
             return
         if not issubclass(self.__iterator, analyzer.required_iterator):
             raise RequirementError(
-                'Analyzer "' + analyzer.__class__.__name__ +
-                '" requires iterator "' +
-                analyzer.required_iterator.__name__ +
-                '" to work correctly. Please initialize analysis object '
-                'with iterator "' + analyzer.required_iterator.__name__ +
-                '".'
+                'Analyzer "'
+                + analyzer.__class__.__name__
+                + '" requires iterator "'
+                + analyzer.required_iterator.__name__
+                + '" to work correctly. Please initialize analysis object '
+                'with iterator "' + analyzer.required_iterator.__name__ + '".'
             )
 
     def check_requirements(self, component):
@@ -64,8 +62,11 @@ class Analysis(object):
             for req in component.requires:
                 if getattr(self, req) is None:
                     raise RequirementError(
-                        'Component "' + component.__class__.__name__ +
-                        '" requires "' + req + '" to perform. Please '
+                        'Component "'
+                        + component.__class__.__name__
+                        + '" requires "'
+                        + req
+                        + '" to perform. Please '
                         'initialize it with attribute "' + req + '".'
                     )
 
@@ -79,10 +80,7 @@ class Analysis(object):
             for dep in dependencies:
                 if dep.__name__ not in chain_keys:
                     raise DependencyError(
-                        error_str.format(
-                            an=analyzer.__class__.__name__,
-                            dep=dep
-                        )
+                        error_str.format(an=analyzer.__class__.__name__, dep=dep)
                     )
 
         if analyzer.depends_on is not None:
@@ -101,8 +99,10 @@ class Analysis(object):
 
     def add_analyzer(self, analyzer):
         if not isinstance(analyzer, Analyzer):
-            raise TypeError('Analyzer has to be an instance of '
-                            '"analyzer.Analyzer" or its subclass')
+            raise TypeError(
+                "Analyzer has to be an instance of "
+                '"analyzer.Analyzer" or its subclass'
+            )
         if analyzer in self.__waiting_line:
             return
         self.check_requirements(analyzer)
@@ -135,13 +135,10 @@ class Analysis(object):
                 self.__waiting_line.append(analyzer)
         if not added_analyzer:
             raise FormerDependencyError(
-                'Could not iterate over all Analyzers. '
-                'Maybe some analyzers are missing for former dependencies? '
-                'Analyzers that could not be performed are: ' +
-                ','.join(map(
-                    lambda x: x.__class__.__name__,
-                    self.__waiting_line
-                ))
+                "Could not iterate over all Analyzers. "
+                "Maybe some analyzers are missing for former dependencies? "
+                "Analyzers that could not be performed are: "
+                + ",".join(map(lambda x: x.__class__.__name__, self.__waiting_line))
             )
         return done
 
@@ -159,8 +156,7 @@ class Analysis(object):
             try:
                 return self.__former_chain[analyzer.__name__]
             except KeyError:
-                raise KeyError('Analyzer "' + analyzer.__name__ +
-                               '" not found.')
+                raise KeyError('Analyzer "' + analyzer.__name__ + '" not found.')
 
     def __store_results(self):
         self.__former_chain.update(self.__chain)
@@ -168,7 +164,7 @@ class Analysis(object):
 
     def set_iterator(self, iterator):
         if not issubclass(iterator, Iterator):
-            raise TypeError('Invalid iterator type')
+            raise TypeError("Invalid iterator type")
         else:
             self.__iterator = iterator
 
@@ -180,6 +176,7 @@ class Iterator(abc.Iterator):
     """
     Iterator for Analysis (uses Iterator Pattern)
     """
+
     requires = None
 
     def __init__(self, analysis):
@@ -200,33 +197,20 @@ class FlowNodeIterator(Iterator):
     def __init__(self, analysis):
         super(FlowNodeIterator, self).__init__(analysis)
         self.items = [
-            node
-            for node in analysis.param_results
-            if node[1] is not None
-        ] + [
-            node
-            for node in analysis.param_results
-            if node[1] is None
-        ]
+            node for node in analysis.param_results if node[1] is not None
+        ] + [node for node in analysis.param_results if node[1] is None]
 
 
 class TupleIterator(Iterator):
     def __init__(self, analysis):
         super(TupleIterator, self).__init__(analysis)
-        self.items = [
-            node
-            for node in analysis.param_results
-        ]
+        self.items = [node for node in analysis.param_results]
 
 
 class NodeIterator(Iterator):
     def __init__(self, analysis):
         super(NodeIterator, self).__init__(analysis)
-        self.items = [
-            node
-            for node in analysis.param_results
-            if node[1] is None
-        ]
+        self.items = [node for node in analysis.param_results if node[1] is None]
 
 
 class Analyzer(object):
@@ -251,40 +235,37 @@ class Analyzer(object):
         return self.analysis.get_analyzer(analyzer).result
 
     def rsc(self, args):
-        return self.analysis.results[args]['scalars']
+        return self.analysis.results[args]["scalars"]
 
     def rsq(self, args):
-        return self.analysis.results[args]['sequences']
+        return self.analysis.results[args]["sequences"]
 
     def psc(self, args):
-        return self.analysis.param_results[args]['scalars']
+        return self.analysis.param_results[args]["scalars"]
 
     def psq(self, args):
-        return self.analysis.param_results[args]['sequences']
+        return self.analysis.param_results[args]["sequences"]
 
     @staticmethod
     def _arg_is_node(args):
-        return (
-                len(args) == 2 and
-                args[1] is None
-        )
+        return len(args) == 2 and args[1] is None
 
     def analyze(self, *args):
         if self.analysis is None:
             raise AttributeError(
-                'Analyzer is not connected to analysis object.'
-                'Maybe you forgot to add analyzer to analysis?'
+                "Analyzer is not connected to analysis object."
+                "Maybe you forgot to add analyzer to analysis?"
             )
 
 
 class SequenceFlowSumAnalyzer(Analyzer):
-    requires = ('results',)
+    requires = ("results",)
 
     def analyze(self, *args):
         super(SequenceFlowSumAnalyzer, self).analyze(*args)
         try:
             rsq = self.rsq(args)
-            result = rsq['flow'].sum()
+            result = rsq["flow"].sum()
         except KeyError:
             return
         self.result[args] = result
@@ -292,13 +273,13 @@ class SequenceFlowSumAnalyzer(Analyzer):
 
 
 class SizeAnalyzer(Analyzer):
-    requires = ('results',)
+    requires = ("results",)
 
     def analyze(self, *args):
         super(SizeAnalyzer, self).analyze(*args)
         try:
             rsc = self.rsc(args)
-            result = rsc['invest']
+            result = rsc["invest"]
         except KeyError:
             return
         self.result[args] = result
@@ -306,7 +287,7 @@ class SizeAnalyzer(Analyzer):
 
 
 class InvestAnalyzer(Analyzer):
-    requires = ('results', 'param_results')
+    requires = ("results", "param_results")
     depends_on = (SizeAnalyzer,)
 
     def analyze(self, *args):
@@ -315,7 +296,7 @@ class InvestAnalyzer(Analyzer):
         try:
             psc = self.psc(args)
             size = seq_result[args]
-            invest = psc['investment_ep_costs']
+            invest = psc["investment_ep_costs"]
         except KeyError:
             return
         result = invest * size
@@ -324,7 +305,7 @@ class InvestAnalyzer(Analyzer):
 
 
 class VariableCostAnalyzer(Analyzer):
-    requires = ('results', 'param_results')
+    requires = ("results", "param_results")
     depends_on = (SequenceFlowSumAnalyzer,)
 
     def analyze(self, *args):
@@ -332,7 +313,7 @@ class VariableCostAnalyzer(Analyzer):
         seq_result = self._get_dep_result(SequenceFlowSumAnalyzer)
         try:
             psc = self.psc(args)
-            variable_cost = psc['variable_costs']
+            variable_cost = psc["variable_costs"]
             flow_sum = seq_result[args]
         except KeyError:
             return
@@ -342,17 +323,16 @@ class VariableCostAnalyzer(Analyzer):
 
 
 class FlowTypeAnalyzer(Analyzer):
-    requires = ('results',)
+    requires = ("results",)
 
     def analyze(self, *args):
         super(FlowTypeAnalyzer, self).analyze(*args)
         if self._arg_is_node(args):
-            self.result[args] = views.get_flow_type(
-                args[0], self.analysis.results)
+            self.result[args] = views.get_flow_type(args[0], self.analysis.results)
 
 
 class NodeBalanceAnalyzer(Analyzer):
-    requires = ('results', 'param_results')
+    requires = ("results", "param_results")
     required_iterator = FlowNodeIterator
     depends_on = (SequenceFlowSumAnalyzer, FlowTypeAnalyzer)
 
@@ -385,12 +365,11 @@ class BusBalanceAnalyzer(NodeBalanceAnalyzer):
         super(BusBalanceAnalyzer, self).analyze(*args)
 
 
-LCOEResult = namedtuple('LCOEResult', ['investment', 'variable_costs'])
+LCOEResult = namedtuple("LCOEResult", ["investment", "variable_costs"])
 
 
 class LCOEAnalyzer(Analyzer):
-    depends_on = (
-        SequenceFlowSumAnalyzer, VariableCostAnalyzer, InvestAnalyzer)
+    depends_on = (SequenceFlowSumAnalyzer, VariableCostAnalyzer, InvestAnalyzer)
     depends_on_former = (NodeBalanceAnalyzer,)
 
     def __init__(self, load_sinks):
@@ -410,7 +389,7 @@ class LCOEAnalyzer(Analyzer):
         seq_result = self._get_dep_result(SequenceFlowSumAnalyzer)
         nb_result = self._get_dep_result(NodeBalanceAnalyzer)
         for to_node in self.load_sinks:
-            for from_node in nb_result[to_node]['input']:
+            for from_node in nb_result[to_node]["input"]:
                 self.total_load += seq_result[(from_node, to_node)]
 
     def analyze(self, *args):

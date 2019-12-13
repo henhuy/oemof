@@ -20,11 +20,11 @@ def test_transformer_class():
     bus = solph.Bus()
     transf = solph.Transformer(inputs={bus: solph.Flow()})
     eq_(transf.conversion_factors[bus][2], 1)
-    transf = solph.Transformer(inputs={bus: solph.Flow()},
-                               conversion_factors={bus: 2})
+    transf = solph.Transformer(inputs={bus: solph.Flow()}, conversion_factors={bus: 2})
     eq_(transf.conversion_factors[bus][6], 2)
-    transf = solph.Transformer(inputs={bus: solph.Flow()},
-                               conversion_factors={bus: [2]})
+    transf = solph.Transformer(
+        inputs={bus: solph.Flow()}, conversion_factors={bus: [2]}
+    )
     eq_(len(transf.conversion_factors[bus]), 1)
     with assert_raises(IndexError):
         eq_(transf.conversion_factors[bus][6], 2)

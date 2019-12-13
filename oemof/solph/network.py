@@ -41,7 +41,7 @@ class EnergySystem(es.EnergySystem):
         # <oemof.solph.groupings.constraint_grouping>` for more information.
         from oemof.solph.groupings import GROUPINGS
 
-        kwargs['groupings'] = (GROUPINGS + kwargs.get('groupings', []))
+        kwargs["groupings"] = GROUPINGS + kwargs.get("groupings", [])
 
         super().__init__(**kwargs)
 
@@ -153,38 +153,60 @@ class Flow:
         # E.g. create the variable in the energy system and populate with
         # information afterwards when creating objects.
 
-        scalars = ['nominal_value', 'summed_max', 'summed_min',
-                   'investment', 'nonconvex', 'integer', 'fixed']
-        sequences = ['actual_value', 'variable_costs', 'min', 'max']
-        dictionaries = ['positive_gradient', 'negative_gradient']
-        defaults = {'fixed': False, 'min': 0, 'max': 1, 'variable_costs': 0,
-                    'positive_gradient': {'ub': None, 'costs': 0},
-                    'negative_gradient': {'ub': None, 'costs': 0},
-                    }
+        scalars = [
+            "nominal_value",
+            "summed_max",
+            "summed_min",
+            "investment",
+            "nonconvex",
+            "integer",
+            "fixed",
+        ]
+        sequences = ["actual_value", "variable_costs", "min", "max"]
+        dictionaries = ["positive_gradient", "negative_gradient"]
+        defaults = {
+            "fixed": False,
+            "min": 0,
+            "max": 1,
+            "variable_costs": 0,
+            "positive_gradient": {"ub": None, "costs": 0},
+            "negative_gradient": {"ub": None, "costs": 0},
+        }
 
         for attribute in set(scalars + sequences + dictionaries + list(kwargs)):
             value = kwargs.get(attribute, defaults.get(attribute))
             if attribute in dictionaries:
-                setattr(self, attribute, {'ub': sequence(value['ub']),
-                                          'costs': value['costs']})
-            elif 'fixed_costs' in attribute:
+                setattr(
+                    self,
+                    attribute,
+                    {"ub": sequence(value["ub"]), "costs": value["costs"]},
+                )
+            elif "fixed_costs" in attribute:
                 raise AttributeError(
-                         "The `fixed_costs` attribute has been removed"
-                         " with v0.2!")
+                    "The `fixed_costs` attribute has been removed" " with v0.2!"
+                )
             else:
-                setattr(self, attribute,
-                        sequence(value) if attribute in sequences else value)
+                setattr(
+                    self,
+                    attribute,
+                    sequence(value) if attribute in sequences else value,
+                )
 
         # Checking for impossible attribute combinations
         if self.fixed and self.actual_value[0] is None:
-            raise ValueError("Cannot fix flow value to None.\n Please "
-                             "set the actual_value attribute of the flow")
+            raise ValueError(
+                "Cannot fix flow value to None.\n Please "
+                "set the actual_value attribute of the flow"
+            )
         if self.investment and self.nominal_value is not None:
-            raise ValueError("Using the investment object the nominal_value"
-                             " has to be set to None.")
+            raise ValueError(
+                "Using the investment object the nominal_value"
+                " has to be set to None."
+            )
         if self.investment and self.nonconvex:
-            raise ValueError("Investment flows cannot be combined with " +
-                             "nonconvex flows!")
+            raise ValueError(
+                "Investment flows cannot be combined with " + "nonconvex flows!"
+            )
 
 
 class Bus(on.Bus):
@@ -196,10 +218,10 @@ class Bus(on.Bus):
      * :py:class:`~oemof.solph.blocks.Bus`
 
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.balanced = kwargs.get('balanced', True)
-
+        self.balanced = kwargs.get("balanced", True)
 
     def constraint_group(self):
         if self.balanced:
@@ -207,15 +229,19 @@ class Bus(on.Bus):
         else:
             return None
 
+
 class Sink(on.Sink):
     """An object with one input flow.
     """
+
     def constraint_group(self):
         pass
+
 
 class Source(on.Source):
     """An object with one output flow.
     """
+
     def constraint_group(self):
         pass
 
@@ -269,20 +295,20 @@ class Transformer(on.Transformer):
     The following sets, variables, constraints and objective parts are created
      * :py:class:`~oemof.solph.blocks.Transformer`
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.conversion_factors = {
-            k: sequence(v)
-            for k, v in kwargs.get('conversion_factors', {}).items()}
+            k: sequence(v) for k, v in kwargs.get("conversion_factors", {}).items()
+        }
 
-        missing_conversion_factor_keys = (
-            (set(self.outputs) | set(self.inputs)) -
-            set(self.conversion_factors))
+        missing_conversion_factor_keys = (set(self.outputs) | set(self.inputs)) - set(
+            self.conversion_factors
+        )
 
         for cf in missing_conversion_factor_keys:
             self.conversion_factors[cf] = sequence(1)
-
 
     def constraint_group(self):
         return blocks.Transformer

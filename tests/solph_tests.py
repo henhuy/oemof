@@ -19,7 +19,6 @@ import oemof.solph as solph
 
 
 class Grouping_Tests:
-
     def setup(self):
         self.es = ES(groupings=solph.GROUPINGS)
         Node.registry = self.es
@@ -37,17 +36,32 @@ class Grouping_Tests:
         `InvestmentFlow` group is not empty.
         """
 
-        b = solph.Bus(label='Bus')
+        b = solph.Bus(label="Bus")
 
-        solph.Source(label='Source', outputs={b: solph.Flow(
-            actual_value=[12, 16, 14], nominal_value=1000000,
-            fixed=True)})
+        solph.Source(
+            label="Source",
+            outputs={
+                b: solph.Flow(
+                    actual_value=[12, 16, 14], nominal_value=1000000, fixed=True
+                )
+            },
+        )
 
-        solph.Sink(label='Sink', inputs={b: solph.Flow(
-            summed_max=2.3, variable_costs=25, max=0.8,
-            investment=Investment(ep_costs=500, maximum=10e5))})
+        solph.Sink(
+            label="Sink",
+            inputs={
+                b: solph.Flow(
+                    summed_max=2.3,
+                    variable_costs=25,
+                    max=0.8,
+                    investment=Investment(ep_costs=500, maximum=10e5),
+                )
+            },
+        )
 
-        ok_(self.es.groups.get(IF),
-            ("Expected InvestmentFlow group to be nonempty.\n" +
-             "Got: {}").format(self.es.groups.get(IF)))
-
+        ok_(
+            self.es.groups.get(IF),
+            ("Expected InvestmentFlow group to be nonempty.\n" + "Got: {}").format(
+                self.es.groups.get(IF)
+            ),
+        )

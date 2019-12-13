@@ -109,24 +109,27 @@ class EnergySystem:
     True
 
     """
+
     def __init__(self, **kwargs):
-        for attribute in ['entities']:
+        for attribute in ["entities"]:
             setattr(self, attribute, kwargs.get(attribute, []))
 
         self._groups = {}
-        self._groupings = ([BY_UID] +
-                           [g if isinstance(g, Grouping) else Nodes(g)
-                            for g in kwargs.get('groupings', [])])
+        self._groupings = [BY_UID] + [
+            g if isinstance(g, Grouping) else Nodes(g)
+            for g in kwargs.get("groupings", [])
+        ]
         for e in self.entities:
             for g in self._groupings:
                 g(e, self.groups)
-        self.results = kwargs.get('results')
+        self.results = kwargs.get("results")
 
-        self.timeindex = kwargs.get('timeindex',
-                                    pd.date_range(start=pd.to_datetime('today'),
-                                                  periods=1, freq='H'))
+        self.timeindex = kwargs.get(
+            "timeindex",
+            pd.date_range(start=pd.to_datetime("today"), periods=1, freq="H"),
+        )
 
-        self.temporal = kwargs.get('temporal')
+        self.temporal = kwargs.get("temporal")
 
     @staticmethod
     def _regroup(entity, groups, groupings):
@@ -134,20 +137,19 @@ class EnergySystem:
             g(entity, groups)
         return groups
 
-
     try:
         from .tools.datapackage import deserialize_energy_system
+
         from_datapackage = classmethod(deserialize_energy_system)
     except ImportError as e:
+
         @classmethod
         def from_datapackage(cls, *args, **kwargs):
             raise e
 
-
     def _add(self, entity):
         self.entities.append(entity)
-        self._groups = partial(self._regroup, entity, self.groups,
-                               self._groupings)
+        self._groups = partial(self._regroup, entity, self.groups, self._groupings)
 
     def add(self, *nodes):
         """ Add :class:`nodes <oemof.network.Node>` to this energy system.
@@ -170,44 +172,43 @@ class EnergySystem:
         self.entities = value
 
     def flows(self):
-        return {(source, target): source.outputs[target]
-                for source in self.nodes
-                for target in source.outputs}
+        return {
+            (source, target): source.outputs[target]
+            for source in self.nodes
+            for target in source.outputs
+        }
 
     def dump(self, dpath=None, filename=None):
         r""" Dump an EnergySystem instance.
         """
         if dpath is None:
-            bpath = os.path.join(os.path.expanduser("~"), '.oemof')
+            bpath = os.path.join(os.path.expanduser("~"), ".oemof")
             if not os.path.isdir(bpath):
                 os.mkdir(bpath)
-            dpath = os.path.join(bpath, 'dumps')
+            dpath = os.path.join(bpath, "dumps")
             if not os.path.isdir(dpath):
                 os.mkdir(dpath)
 
         if filename is None:
-            filename = 'es_dump.oemof'
+            filename = "es_dump.oemof"
 
-        pickle.dump(self.__dict__, open(os.path.join(dpath, filename), 'wb'))
+        pickle.dump(self.__dict__, open(os.path.join(dpath, filename), "wb"))
 
-        msg = ('Attributes dumped to: {0}'.format(os.path.join(
-            dpath, filename)))
+        msg = "Attributes dumped to: {0}".format(os.path.join(dpath, filename))
         logging.debug(msg)
         return msg
 
     def restore(self, dpath=None, filename=None):
         r""" Restore an EnergySystem instance.
         """
-        logging.info(
-            "Restoring attributes will overwrite existing attributes.")
+        logging.info("Restoring attributes will overwrite existing attributes.")
         if dpath is None:
-            dpath = os.path.join(os.path.expanduser("~"), '.oemof', 'dumps')
+            dpath = os.path.join(os.path.expanduser("~"), ".oemof", "dumps")
 
         if filename is None:
-            filename = 'es_dump.oemof'
+            filename = "es_dump.oemof"
 
         self.__dict__ = pickle.load(open(os.path.join(dpath, filename), "rb"))
-        msg = ('Attributes restored from: {0}'.format(os.path.join(
-            dpath, filename)))
+        msg = "Attributes restored from: {0}".format(os.path.join(dpath, filename))
         logging.debug(msg)
         return msg
