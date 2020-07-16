@@ -19,8 +19,8 @@ from oemof.tools import economics
 
 
 def test_helpers():
-    ok_(os.path.isdir(os.path.join(os.path.expanduser("~"), ".oemof")))
-    new_dir = helpers.extend_basic_path("test_xf67456_dir")
+    ok_(os.path.isdir(os.path.join(os.path.expanduser('~'), '.oemof')))
+    new_dir = helpers.extend_basic_path('test_xf67456_dir')
     ok_(os.path.isdir(new_dir))
     os.rmdir(new_dir)
     ok_(not os.path.isdir(new_dir))
@@ -29,7 +29,7 @@ def test_helpers():
 def test_logger():
     filepath = logger.define_logging()
     ok_(isinstance(filepath, str))
-    ok_(filepath[-9:] == "oemof.log")
+    ok_(filepath[-9:] == 'oemof.log')
     ok_(os.path.isfile(filepath))
 
 

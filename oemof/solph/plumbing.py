@@ -37,9 +37,8 @@ def sequence(sequence_or_scalar):
     [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 
     """
-    if isinstance(sequence_or_scalar, abc.Iterable) and not isinstance(
-        sequence_or_scalar, str
-    ):
+    if (isinstance(sequence_or_scalar, abc.Iterable) and not
+            isinstance(sequence_or_scalar, str)):
         return sequence_or_scalar
     else:
         return _Sequence(default=sequence_or_scalar)
@@ -68,7 +67,6 @@ class _Sequence(UserList):
     [23, 42, 42]
 
     """
-
     def __init__(self, *args, **kwargs):
         self.default = kwargs["default"]
         self.default_changed = False

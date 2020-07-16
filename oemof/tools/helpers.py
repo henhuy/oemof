@@ -19,7 +19,7 @@ def get_basic_path():
     """Returns the basic oemof path and creates it if necessary.
     The basic path is the '.oemof' folder in the $HOME directory.
     """
-    basicpath = os.path.join(os.path.expanduser("~"), ".oemof")
+    basicpath = os.path.join(os.path.expanduser('~'), '.oemof')
     if not os.path.isdir(basicpath):
         os.mkdir(basicpath)
     return basicpath
@@ -35,7 +35,7 @@ def extend_basic_path(subfolder):
     return extended_path
 
 
-def flatten(d, parent_key="", sep="_"):
+def flatten(d, parent_key='', sep='_'):
     """
     Flatten dictionary by compressing keys.
 

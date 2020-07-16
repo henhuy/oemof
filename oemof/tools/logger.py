@@ -17,19 +17,10 @@ from oemof.tools import helpers
 import oemof
 
 
-def define_logging(
-    logpath=None,
-    logfile="oemof.log",
-    file_format=None,
-    screen_format=None,
-    file_datefmt=None,
-    screen_datefmt=None,
-    screen_level=logging.INFO,
-    file_level=logging.DEBUG,
-    log_version=True,
-    log_path=True,
-    timed_rotating=None,
-):
+def define_logging(logpath=None, logfile='oemof.log', file_format=None,
+                   screen_format=None, file_datefmt=None, screen_datefmt=None,
+                   screen_level=logging.INFO, file_level=logging.DEBUG,
+                   log_version=True, log_path=True, timed_rotating=None):
 
     r"""Initialise customisable logger.
 
@@ -92,18 +83,19 @@ def define_logging(
     """
 
     if logpath is None:
-        logpath = helpers.extend_basic_path("log_files")
+        logpath = helpers.extend_basic_path('log_files')
 
     file = os.path.join(logpath, logfile)
 
-    log = logging.getLogger("")
+    log = logging.getLogger('')
 
     # Remove existing handlers to avoid interference.
     log.handlers = []
     log.setLevel(logging.DEBUG)
 
     if file_format is None:
-        file_format = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+        file_format = (
+            "%(asctime)s - %(levelname)s - %(module)s - %(message)s")
     file_formatter = logging.Formatter(file_format, file_datefmt)
 
     if screen_format is None:
@@ -119,7 +111,9 @@ def define_logging(
     ch.setLevel(screen_level)
     log.addHandler(ch)
 
-    timed_rotating_p = {"when": "midnight", "backupCount": 10}
+    timed_rotating_p = {
+        'when': 'midnight',
+        'backupCount': 10}
 
     if timed_rotating is not None:
         timed_rotating_p.update(timed_rotating)
@@ -168,7 +162,7 @@ def check_version():
     try:
         version = oemof.__version__
     except AttributeError:
-        version = "No version found due to internal error."
+        version = 'No version found due to internal error.'
     return version
 
 
@@ -188,12 +182,12 @@ def check_git_branch():
     8
     """
 
-    path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, ".git"
-    )
+    path = os.path.join(os.path.dirname(
+        os.path.realpath(__file__)), os.pardir,
+        os.pardir, '.git')
 
     # Reads the name of the branch
-    f_branch = os.path.join(path, "HEAD")
+    f_branch = os.path.join(path, 'HEAD')
     f = open(f_branch, "r")
     first_line = f.readlines(1)
     name_full = first_line[0].replace("\n", "")
@@ -201,7 +195,7 @@ def check_git_branch():
     f.close()
 
     # Reads the code of the last commit used
-    f_commit = os.path.join(path, "refs", "heads", name_branch)
+    f_commit = os.path.join(path, 'refs', 'heads', name_branch)
     f = open(f_commit, "r")
     last_commit = f.read(8)
     f.close()

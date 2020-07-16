@@ -27,8 +27,8 @@ class Investment:
         of this value.
 
     """
-
-    def __init__(self, maximum=float("+inf"), minimum=0, ep_costs=0, existing=0):
+    def __init__(self, maximum=float('+inf'), minimum=0, ep_costs=0,
+                 existing=0):
         self.maximum = maximum
         self.minimum = minimum
         self.ep_costs = ep_costs
@@ -61,17 +61,15 @@ class NonConvex:
         the maximum of both e.g. for six timesteps if a minimum downtime of
         six timesteps is defined in addition to a four timestep minimum uptime.
     """
-
     def __init__(self, **kwargs):
-        scalars = ["minimum_uptime", "minimum_downtime", "initial_status"]
-        sequences = ["startup_costs", "shutdown_costs"]
-        defaults = {"initial_status": 0}
+        scalars = ['minimum_uptime', 'minimum_downtime', 'initial_status']
+        sequences = ['startup_costs', 'shutdown_costs']
+        defaults = {'initial_status': 0}
 
         for attribute in set(scalars + sequences + list(kwargs)):
             value = kwargs.get(attribute, defaults.get(attribute))
-            setattr(
-                self, attribute, sequence(value) if attribute in sequences else value
-            )
+            setattr(self, attribute,
+                    sequence(value) if attribute in sequences else value)
 
         self._max_up_down = None
 
@@ -82,9 +80,10 @@ class NonConvex:
         The maximum of both is used to set the initial status for this
         number of timesteps within the edge regions.
         """
-        if self.minimum_uptime is not None and self.minimum_downtime is None:
+        if (self.minimum_uptime is not None and self.minimum_downtime is None):
             max_up_down = self.minimum_uptime
-        elif self.minimum_uptime is None and self.minimum_downtime is not None:
+        elif (self.minimum_uptime is None and
+              self.minimum_downtime is not None):
             max_up_down = self.minimum_downtime
         else:
             max_up_down = max(self.minimum_uptime, self.minimum_downtime)
