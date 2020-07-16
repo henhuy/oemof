@@ -3,16 +3,29 @@
 Example that illustrates how to use custom component `GenericCHP` can be used.
 
 In this case it is used to model a combined cycle extraction turbine.
-"""
-__copyright__ = "oemof developer group"
-__license__ = "GPLv3"
 
-from nose.tools import eq_
+This file is part of project oemof (github.com/oemof/oemof). It's copyrighted
+by the contributors recorded in the version control history of the file,
+available from its original location
+oemof/tests/test_scripts/test_solph/test_generic_caes/test_generic_caes.py
+
+SPDX-License-Identifier: MIT
+"""
+
 import os
+
 import pandas as pd
-import oemof.solph as solph
-from oemof.network import Node
-from oemof.outputlib import processing, views
+from nose.tools import eq_
+from oemof.network.network import Node
+from oemof.solph import Bus
+from oemof.solph import EnergySystem
+from oemof.solph import Flow
+from oemof.solph import Model
+from oemof.solph import Sink
+from oemof.solph import Source
+from oemof.solph import custom
+from oemof.solph import processing
+from oemof.solph import views
 
 
 def test_gen_caes():
@@ -25,23 +38,23 @@ def test_gen_caes():
 
     # create an energy system
     idx = pd.date_range('1/1/2017', periods=periods, freq='H')
-    es = solph.EnergySystem(timeindex=idx)
+    es = EnergySystem(timeindex=idx)
     Node.registry = es
 
     # resources
-    bgas = solph.Bus(label='bgas')
+    bgas = Bus(label='bgas')
 
-    rgas = solph.Source(label='rgas', outputs={
-        bgas: solph.Flow(variable_costs=20)})
+    Source(label='rgas', outputs={
+        bgas: Flow(variable_costs=20)})
 
     # power
-    bel_source = solph.Bus(label='bel_source')
-    source_el = solph.Source(label='source_el', outputs={
-        bel_source: solph.Flow(variable_costs=data['price_el_source'])})
+    bel_source = Bus(label='bel_source')
+    Source(label='source_el', outputs={
+        bel_source: Flow(variable_costs=data['price_el_source'])})
 
-    bel_sink = solph.Bus(label='bel_sink')
-    sink_el = solph.Sink(label='sink_el', inputs={
-        bel_sink: solph.Flow(variable_costs=data['price_el_sink'])})
+    bel_sink = Bus(label='bel_sink')
+    Sink(label='sink_el', inputs={
+        bel_sink: Flow(variable_costs=data['price_el_sink'])})
 
     # dictionary with parameters for a specific CAES plant
     # based on thermal modelling and linearization techniques
@@ -69,15 +82,15 @@ def test_gen_caes():
     }
 
     # generic compressed air energy storage (caes) plant
-    caes = solph.custom.GenericCAES(
+    custom.GenericCAES(
         label='caes',
-        electrical_input={bel_source: solph.Flow()},
-        fuel_input={bgas: solph.Flow()},
-        electrical_output={bel_sink: solph.Flow()},
+        electrical_input={bel_source: Flow()},
+        fuel_input={bgas: Flow()},
+        electrical_output={bel_sink: Flow()},
         params=concept, fixed_costs=0)
 
     # create an optimization problem and solve it
-    om = solph.Model(es)
+    om = Model(es)
 
     # solve model
     om.solve(solver='cbc')
@@ -85,29 +98,31 @@ def test_gen_caes():
     # create result object
     results = processing.results(om)
 
-    data = views.node(results, 'caes')['sequences'].sum(axis=0).to_dict()
+    data = views.node(
+        results, 'caes', keep_none_type=True
+    )['sequences'].sum(axis=0).to_dict()
 
     test_dict = {
-        (('caes', 'None'), 'cav_level'): 25658.82964382,
-        (('caes', 'None'), 'exp_p'): 5020.801997000007,
-        (('caes', 'None'), 'exp_q_fuel_in'): 5170.880360999999,
-        (('caes', 'None'), 'tes_e_out'): 0.0,
-        (('caes', 'None'), 'exp_st'): 226.0,
+        (('caes', None), 'cav_level'): 25658.82964382,
+        (('caes', None), 'exp_p'): 5020.801997000007,
+        (('caes', None), 'exp_q_fuel_in'): 5170.880360999999,
+        (('caes', None), 'tes_e_out'): 0.0,
+        (('caes', None), 'exp_st'): 226.0,
         (('bgas', 'caes'), 'flow'): 5170.880360999999,
-        (('caes', 'None'), 'cav_e_out'): 1877.5972265299995,
-        (('caes', 'None'), 'exp_p_max'): 17512.352336,
-        (('caes', 'None'), 'cmp_q_waste'): 2499.9125993000007,
-        (('caes', 'None'), 'cmp_p'): 2907.7271520000004,
-        (('caes', 'None'), 'exp_q_add_in'): 0.0,
-        (('caes', 'None'), 'cmp_st'): 37.0,
-        (('caes', 'None'), 'cmp_q_out_sum'): 2499.9125993000007,
-        (('caes', 'None'), 'tes_level'): 0.0,
-        (('caes', 'None'), 'tes_e_in'): 0.0,
-        (('caes', 'None'), 'exp_q_in_sum'): 5170.880360999999,
-        (('caes', 'None'), 'cmp_p_max'): 22320.76334300001,
+        (('caes', None), 'cav_e_out'): 1877.5972265299995,
+        (('caes', None), 'exp_p_max'): 17512.352336,
+        (('caes', None), 'cmp_q_waste'): 2499.9125993000007,
+        (('caes', None), 'cmp_p'): 2907.7271520000004,
+        (('caes', None), 'exp_q_add_in'): 0.0,
+        (('caes', None), 'cmp_st'): 37.0,
+        (('caes', None), 'cmp_q_out_sum'): 2499.9125993000007,
+        (('caes', None), 'tes_level'): 0.0,
+        (('caes', None), 'tes_e_in'): 0.0,
+        (('caes', None), 'exp_q_in_sum'): 5170.880360999999,
+        (('caes', None), 'cmp_p_max'): 22320.76334300001,
         (('caes', 'bel_sink'), 'flow'): 5020.801997000007,
         (('bel_source', 'caes'), 'flow'): 2907.7271520000004,
-        (('caes', 'None'), 'cav_e_in'): 1877.597226}
+        (('caes', None), 'cav_e_in'): 1877.597226}
 
     for key in test_dict.keys():
         eq_(int(round(data[key])), int(round(test_dict[key])))
