@@ -30,7 +30,7 @@ setup(name='oemof',
       install_requires=['dill <= 0.2.8.5',
                         'numpy >= 1.7.0, <= 1.15.1',
                         'pandas >= 0.18.0, <= 0.24',
-                        'pyomo >= 4.4.0, <= 5.5.0',
+                        'pyomo >= 5.7.0, < 6.0',
                         'networkx <= 2.1'],
       extras_require={'datapackage': ['datapackage']},
       entry_points={
