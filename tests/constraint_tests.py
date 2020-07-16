@@ -6,35 +6,33 @@ This file is part of project oemof (github.com/oemof/oemof). It's copyrighted
 by the contributors recorded in the version control history of the file,
 available from its original location oemof/tests/constraint_tests.py
 
-SPDX-License-Identifier: GPL-3.0-or-later
+SPDX-License-Identifier: MIT
 """
 
-from difflib import unified_diff
 import logging
 import os.path as ospath
 import re
+from difflib import unified_diff
 
-from nose.tools import eq_, assert_raises
 import pandas as pd
-
-from oemof.network import Node
-from oemof.tools import helpers
-import oemof.solph as solph
+from nose.tools import assert_raises
+from nose.tools import eq_
+from oemof import solph
+from oemof.network.network import Node
 
 logging.disable(logging.INFO)
 
 
-class Constraint_Tests:
-
+class TestsConstraint:
     @classmethod
-    def setup_class(self):
-        self.objective_pattern = re.compile(r'^objective.*(?=s\.t\.)',
-                                            re.DOTALL | re.MULTILINE)
+    def setup_class(cls):
+        cls.objective_pattern = re.compile(r'^objective.*(?=s\.t\.)',
+                                           re.DOTALL | re.MULTILINE)
 
-        self.date_time_index = pd.date_range('1/1/2012', periods=3, freq='H')
+        cls.date_time_index = pd.date_range('1/1/2012', periods=3, freq='H')
 
-        self.tmppath = helpers.extend_basic_path('tmp')
-        logging.info(self.tmppath)
+        cls.tmppath = solph.helpers.extend_basic_path('tmp')
+        logging.info(cls.tmppath)
 
     def setup(self):
         self.energysystem = solph.EnergySystem(groupings=solph.GROUPINGS,
@@ -68,7 +66,7 @@ class Constraint_Tests:
                                   filename)) as expected_file:
 
                 def chop_trailing_whitespace(lines):
-                    return [re.sub(r'\s*$', '', l) for l in lines]
+                    return [re.sub(r'\s*$', '', ln) for ln in lines]
 
                 def remove(pattern, lines):
                     if not pattern:
@@ -98,8 +96,9 @@ class Constraint_Tests:
                             lines[n] = (
                                 '-'
                                 if lines[n] and lines[n][0] == '+'
-                                else '+' if lines[n]
-                                         else lines[n]) + lines[n][1:]
+                                else '+'
+                                if lines[n]
+                                else lines[n]) + lines[n][1:]
                         lines[end] = '= ' + lines[end][3:]
                     return lines
 
@@ -169,7 +168,7 @@ class Constraint_Tests:
         bel = solph.Bus(label='electricityBus')
 
         solph.Source(label='wind', outputs={bel: solph.Flow(
-            actual_value=[.43, .72, .29], nominal_value=10e5, fixed=True)})
+            fix=[.43, .72, .29], nominal_value=10e5)})
 
         solph.Sink(label='excess', inputs={bel: solph.Flow(variable_costs=40)})
 
@@ -190,7 +189,7 @@ class Constraint_Tests:
         bel = solph.Bus(label='electricityBus')
 
         solph.Source(label='wind', outputs={bel: solph.Flow(
-            actual_value=[12, 16, 14], nominal_value=1000000, fixed=True)})
+            fix=[12, 16, 14], nominal_value=1000000)})
 
         solph.Sink(label='excess', inputs={bel: solph.Flow(
             summed_max=2.3, variable_costs=25, max=0.8,
@@ -210,7 +209,7 @@ class Constraint_Tests:
             investment=solph.Investment(ep_costs=123))})
 
         solph.Sink(label='excess', inputs={bel: solph.Flow(
-            actual_value=[.5, .8, .3], nominal_value=10e4, fixed=True)})
+            fix=[.5, .8, .3], nominal_value=10e4)})
 
         self.compare_lp_files('invest_source_fixed_sink.lp')
 
@@ -223,11 +222,11 @@ class Constraint_Tests:
             label='storage_no_invest',
             inputs={bel: solph.Flow(nominal_value=16667, variable_costs=56)},
             outputs={bel: solph.Flow(nominal_value=16667, variable_costs=24)},
-            nominal_capacity=10e4,
-            capacity_loss=0.13,
+            nominal_storage_capacity=10e4,
+            loss_rate=0.13,
             inflow_conversion_factor=0.97,
             outflow_conversion_factor=0.86,
-            initial_capacity=0.4)
+            initial_storage_level=0.4)
 
         self.compare_lp_files('storage.lp')
 
@@ -241,10 +240,10 @@ class Constraint_Tests:
             label='storage1',
             inputs={bel: solph.Flow(variable_costs=56)},
             outputs={bel: solph.Flow(variable_costs=24)},
-            nominal_capacity=None,
-            capacity_loss=0.13,
-            capacity_max=0.9,
-            capacity_min=0.1,
+            nominal_storage_capacity=None,
+            loss_rate=0.13,
+            max_storage_level=0.9,
+            min_storage_level=0.1,
             invest_relation_input_capacity=1/6,
             invest_relation_output_capacity=1/6,
             inflow_conversion_factor=0.97,
@@ -263,7 +262,7 @@ class Constraint_Tests:
             inputs={bel: solph.Flow(investment=solph.Investment(ep_costs=99))},
             outputs={bel: solph.Flow(investment=solph.Investment(ep_costs=9))},
             investment=solph.Investment(ep_costs=145),
-            initial_capacity=0.5)
+            initial_storage_level=0.5)
         self.compare_lp_files('storage_invest_2.lp')
 
     def test_storage_invest_3(self):
@@ -277,7 +276,7 @@ class Constraint_Tests:
             label='storage3',
             inputs={bel: solph.Flow(investment=solph.Investment(ep_costs=99))},
             outputs={bel: solph.Flow(investment=solph.Investment(ep_costs=9))},
-            nominal_capacity=5000)
+            nominal_storage_capacity=5000)
         self.compare_lp_files('storage_invest_3.lp')
 
     def test_storage_invest_4(self):
@@ -307,7 +306,7 @@ class Constraint_Tests:
             outputs={bel: solph.Flow(investment=solph.Investment(
                 existing=100))},
             invest_relation_input_output=1.1,
-            nominal_capacity=10000)
+            nominal_storage_capacity=10000)
         self.compare_lp_files('storage_invest_5.lp')
 
     def test_storage_invest_6(self):
@@ -325,6 +324,95 @@ class Constraint_Tests:
             invest_relation_input_output=1.1,
             investment=solph.Investment(ep_costs=145, existing=10000))
         self.compare_lp_files('storage_invest_6.lp')
+
+    def test_storage_minimum_invest(self):
+        """All invest variables are coupled. The invest variables of the Flows
+        will be created during the initialisation of the storage e.g. battery
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storage1',
+            inputs={bel: solph.Flow()},
+            outputs={bel: solph.Flow()},
+            investment=solph.Investment(
+                ep_costs=145, minimum=100, maximum=200))
+
+        self.compare_lp_files('storage_invest_minimum.lp')
+
+    def test_storage_unbalanced(self):
+        """Testing a unbalanced storage (e.g. battery)."""
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storage1',
+            inputs={bel: solph.Flow()},
+            outputs={bel: solph.Flow()},
+            nominal_storage_capacity=1111,
+            initial_storage_level=None,
+            balanced=False,
+            invest_relation_input_capacity=1,
+            invest_relation_output_capacity=1)
+        self.compare_lp_files('storage_unbalanced.lp')
+
+    def test_storage_invest_unbalanced(self):
+        """Testing a unbalanced storage (e.g. battery)."""
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storage1',
+            inputs={bel: solph.Flow()},
+            outputs={bel: solph.Flow()},
+            nominal_storage_capacity=None,
+            initial_storage_level=0.5,
+            balanced=False,
+            invest_relation_input_capacity=1,
+            invest_relation_output_capacity=1,
+            investment=solph.Investment(ep_costs=145))
+        self.compare_lp_files('storage_invest_unbalanced.lp')
+
+    def test_storage_fixed_losses(self):
+        """
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storage_no_invest',
+            inputs={bel: solph.Flow(nominal_value=16667, variable_costs=56)},
+            outputs={bel: solph.Flow(nominal_value=16667, variable_costs=24)},
+            nominal_storage_capacity=1e5,
+            loss_rate=0.13,
+            fixed_losses_relative=0.01,
+            fixed_losses_absolute=3,
+            inflow_conversion_factor=0.97,
+            outflow_conversion_factor=0.86,
+            initial_storage_level=0.4)
+
+        self.compare_lp_files('storage_fixed_losses.lp')
+
+    def test_storage_invest_1_fixed_losses(self):
+        """All invest variables are coupled. The invest variables of the Flows
+        will be created during the initialisation of the storage e.g. battery
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storage1',
+            inputs={bel: solph.Flow(variable_costs=56)},
+            outputs={bel: solph.Flow(variable_costs=24)},
+            nominal_storage_capacity=None,
+            loss_rate=0.13,
+            fixed_losses_relative=0.01,
+            fixed_losses_absolute=3,
+            max_storage_level=0.9,
+            min_storage_level=0.1,
+            invest_relation_input_capacity=1/6,
+            invest_relation_output_capacity=1/6,
+            inflow_conversion_factor=0.97,
+            outflow_conversion_factor=0.86,
+            investment=solph.Investment(ep_costs=145, maximum=234))
+
+        self.compare_lp_files('storage_invest_1_fixed_losses.lp')
 
     def test_transformer(self):
         """Constraint test of a LinearN1Transformer without Investment.
@@ -446,15 +534,36 @@ class Constraint_Tests:
 
         self.compare_lp_files('variable_chp.lp')
 
+    def test_generic_invest_limit(self):
+        """
+        """
+        bus = solph.Bus(label='bus_1')
+
+        solph.Source(label='source_0', outputs={bus: solph.Flow(
+            investment=solph.Investment(ep_costs=50, space=4))})
+
+        solph.Source(label='source_1', outputs={bus: solph.Flow(
+            investment=solph.Investment(ep_costs=100, space=1))})
+
+        solph.Source(label='source_2', outputs={bus: solph.Flow(
+            investment=solph.Investment(ep_costs=75))})
+
+        om = self.get_om()
+
+        om = solph.constraints.additional_investment_flow_limit(
+            om, "space", limit=20)
+
+        self.compare_lp_files('generic_invest_limit.lp', my_om=om)
+
     def test_emission_constraints(self):
         """
         """
         bel = solph.Bus(label='electricityBus')
 
         solph.Source(label='source1', outputs={bel: solph.Flow(
-            nominal_value=100, emission=0.5)})
+            nominal_value=100, emission_factor=[0.5, -1.0, 2.0])})
         solph.Source(label='source2', outputs={bel: solph.Flow(
-            nominal_value=100, emission=0.8)})
+            nominal_value=100, emission_factor=3.5)})
 
         # Should be ignored because the emission attribute is not defined.
         solph.Source(label='source3', outputs={bel: solph.Flow(
@@ -466,25 +575,84 @@ class Constraint_Tests:
 
         self.compare_lp_files('emission_limit.lp', my_om=om)
 
+    def test_flow_count_limit(self):
+        """
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.Source(label='source1', outputs={bel: solph.Flow(
+            nonconvex=solph.NonConvex(),
+            nominal_value=100, emission_factor=[0.5, -1.0, 2.0])})
+        solph.Source(label='source2', outputs={bel: solph.Flow(
+            nonconvex=solph.NonConvex(),
+            nominal_value=100, emission_factor=3.5)})
+
+        # Should be ignored because emission_factor is not defined.
+        solph.Source(label='source3', outputs={bel: solph.Flow(
+            nonconvex=solph.NonConvex(), nominal_value=100)})
+
+        # Should be ignored because it is not NonConvex.
+        solph.Source(label='source4', outputs={bel: solph.Flow(
+            emission_factor=1.5,
+            min=0.3, nominal_value=100)})
+
+        om = self.get_om()
+
+        # one of the two flows has to be active
+        solph.constraints.limit_active_flow_count_by_keyword(om,
+                                                             "emission_factor",
+                                                             lower_limit=1,
+                                                             upper_limit=2)
+
+        self.compare_lp_files('flow_count_limit.lp', my_om=om)
+
+    def test_shared_limit(self):
+        """
+        """
+        b1 = solph.Bus(label='bus')
+
+        storage1 = solph.components.GenericStorage(
+            label="storage1",
+            nominal_storage_capacity=5,
+            inputs={b1: solph.Flow()},
+            outputs={b1: solph.Flow()})
+        storage2 = solph.components.GenericStorage(
+            label="storage2",
+            nominal_storage_capacity=5,
+            inputs={b1: solph.Flow()},
+            outputs={b1: solph.Flow()})
+
+        model = self.get_om()
+
+        components = [storage1, storage2]
+
+        solph.constraints.shared_limit(
+            model,
+            model.GenericStorageBlock.storage_content,
+            "limit_storage", components,
+            [0.5, 1.25], upper_limit=7)
+
+        self.compare_lp_files('shared_limit.lp', my_om=model)
+
     def test_flow_without_emission_for_emission_constraint(self):
         """
         """
         def define_emission_limit():
             bel = solph.Bus(label='electricityBus')
             solph.Source(label='source1', outputs={bel: solph.Flow(
-                nominal_value=100, emission=0.8)})
+                nominal_value=100, emission_factor=0.8)})
             solph.Source(label='source2', outputs={bel: solph.Flow(
                 nominal_value=100)})
             om = self.get_om()
             solph.constraints.emission_limit(om, om.flows, limit=777)
-        assert_raises(ValueError, define_emission_limit)
+        assert_raises(AttributeError, define_emission_limit)
 
     def test_flow_without_emission_for_emission_constraint_no_error(self):
         """
         """
         bel = solph.Bus(label='electricityBus')
         solph.Source(label='source1', outputs={bel: solph.Flow(
-            nominal_value=100, emission=0.8)})
+            nominal_value=100, emission_factor=0.8)})
         solph.Source(label='source2', outputs={bel: solph.Flow(
             nominal_value=100)})
         om = self.get_om()
@@ -553,3 +721,181 @@ class Constraint_Tests:
                     minimum_downtime=4, minimum_uptime=2, initial_status=2,
                     startup_costs=5, shutdown_costs=7))})
         self.compare_lp_files('min_max_runtime.lp')
+
+    def test_activity_costs(self):
+        """Testing activity_costs attribute for nonconvex flows."""
+        bus_t = solph.Bus(label='Bus_C')
+        solph.Source(
+            label='cheap_plant_activity_costs',
+            outputs={bus_t: solph.Flow(
+                nominal_value=10, min=0.5, max=1.0, variable_costs=10,
+                nonconvex=solph.NonConvex(activity_costs=2))})
+        self.compare_lp_files('activity_costs.lp')
+
+    def test_maximum_startups(self):
+        """Testing maximum_startups attribute for nonconvex flows."""
+        bus_t = solph.Bus(label='Bus_C')
+        solph.Source(
+            label='cheap_plant_maximum_startups',
+            outputs={bus_t: solph.Flow(
+                nominal_value=10, min=0.5, max=1.0, variable_costs=10,
+                nonconvex=solph.NonConvex(maximum_startups=2))})
+        self.compare_lp_files('maximum_startups.lp')
+
+    def test_maximum_shutdowns(self):
+        """Testing maximum_shutdowns attribute for nonconvex flows."""
+        bus_t = solph.Bus(label='Bus_C')
+        solph.Source(
+            label='cheap_plant_maximum_shutdowns',
+            outputs={bus_t: solph.Flow(
+                nominal_value=10, min=0.5, max=1.0, variable_costs=10,
+                nonconvex=solph.NonConvex(maximum_shutdowns=2))})
+        self.compare_lp_files('maximum_shutdowns.lp')
+
+    def test_offsettransformer(self):
+        """Constraint test of a OffsetTransformer.
+        """
+        bgas = solph.Bus(label='gasBus')
+        bth = solph.Bus(label='thermalBus')
+
+        solph.components.OffsetTransformer(
+            label='gasboiler',
+            inputs={bgas: solph.Flow(
+                nonconvex=solph.NonConvex(),
+                nominal_value=100,
+                min=0.32,
+            )},
+            outputs={bth: solph.Flow()},
+            coefficients=[-17, 0.9])
+
+        self.compare_lp_files('offsettransformer.lp')
+
+    def test_dsm_module_delay(self):
+        """Constraint test of Sink-DSM with method=delay"""
+
+        b_elec = solph.Bus(label='bus_elec')
+        solph.custom.SinkDSM(
+            label='demand_dsm',
+            inputs={b_elec: solph.Flow()},
+            demand=[1] * 3,
+            capacity_up=[0.5] * 3,
+            capacity_down=[0.5] * 3,
+            method='delay',
+            delay_time=1,
+            cost_dsm_down=2,
+        )
+        self.compare_lp_files('dsm_module_delay.lp')
+
+    def test_dsm_module_interval(self):
+        """Constraint test of Sink-DSM with method=interval"""
+
+        b_elec = solph.Bus(label='bus_elec')
+        solph.custom.SinkDSM(
+            label='demand_dsm',
+            inputs={b_elec: solph.Flow()},
+            demand=[1] * 3,
+            capacity_up=[0.5, 0.4, 0.5],
+            capacity_down=[0.5, 0.4, 0.5],
+            method='interval',
+            shift_interval=2,
+            cost_dsm_down=2,
+        )
+        self.compare_lp_files('dsm_module_interval.lp')
+
+    def test_nonconvex_investment_storage_without_offset(self):
+        """All invest variables are coupled. The invest variables of the Flows
+        will be created during the initialisation of the storage e.g. battery
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storage_non_convex',
+            inputs={bel: solph.Flow(variable_costs=56)},
+            outputs={bel: solph.Flow(variable_costs=24)},
+            nominal_storage_capacity=None,
+            loss_rate=0.13,
+            max_storage_level=0.9,
+            min_storage_level=0.1,
+            invest_relation_input_capacity=1 / 6,
+            invest_relation_output_capacity=1 / 6,
+            inflow_conversion_factor=0.97,
+            outflow_conversion_factor=0.86,
+            investment=solph.Investment(ep_costs=141, maximum=244, minimum=12,
+                                        nonconvex=True))
+
+        self.compare_lp_files('storage_invest_without_offset.lp')
+
+    def test_nonconvex_investment_storage_with_offset(self):
+        """All invest variables are coupled. The invest variables of the Flows
+        will be created during the initialisation of the storage e.g. battery
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.components.GenericStorage(
+            label='storagenon_convex',
+            inputs={bel: solph.Flow(variable_costs=56)},
+            outputs={bel: solph.Flow(variable_costs=24)},
+            nominal_storage_capacity=None,
+            loss_rate=0.13,
+            max_storage_level=0.9,
+            min_storage_level=0.1,
+            invest_relation_input_capacity=1 / 6,
+            invest_relation_output_capacity=1 / 6,
+            inflow_conversion_factor=0.97,
+            outflow_conversion_factor=0.86,
+            investment=solph.Investment(ep_costs=145, minimum=19, offset=5,
+                                        nonconvex=True, maximum=1454))
+
+        self.compare_lp_files('storage_invest_with_offset.lp')
+
+    def test_nonconvex_invest_storage_all_nonconvex(self):
+        """All invest variables are free and nonconvex."""
+        b1 = solph.Bus(label='bus1')
+
+        solph.components.GenericStorage(
+            label='storage_all_nonconvex',
+            inputs={b1: solph.Flow(investment=solph.Investment(
+                nonconvex=True, minimum=5, offset=10, maximum=30,
+                ep_costs=10))},
+            outputs={b1: solph.Flow(
+                investment=solph.Investment(
+                    nonconvex=True, minimum=8, offset=15, ep_costs=10,
+                    maximum=20))},
+            investment=solph.Investment(
+                nonconvex=True, ep_costs=20, offset=30, minimum=20,
+                maximum=100))
+
+        self.compare_lp_files('storage_invest_all_nonconvex.lp')
+
+    def test_nonconvex_invest_sink_without_offset(self):
+        """ Non convex invest flow without offset, with minimum.
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.Sink(label='sink_nonconvex_invest', inputs={bel: solph.Flow(
+            summed_max=2.3, variable_costs=25, max=0.8,
+            investment=solph.Investment(ep_costs=500, minimum=15,
+                                        nonconvex=True, maximum=172))})
+        self.compare_lp_files('flow_invest_without_offset.lp')
+
+    def test_nonconvex_invest_source_with_offset(self):
+        """ Non convex invest flow with offset, with minimum.
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.Source(label='source_nonconvex_invest', inputs={bel: solph.Flow(
+            summed_max=2.3, variable_costs=25, max=0.8,
+            investment=solph.Investment(ep_costs=500, minimum=15, maximum=20,
+                                        offset=34, nonconvex=True))})
+        self.compare_lp_files('flow_invest_with_offset.lp')
+
+    def test_nonconvex_invest_source_with_offset_no_minimum(self):
+        """ Non convex invest flow with offset, without minimum.
+        """
+        bel = solph.Bus(label='electricityBus')
+
+        solph.Source(label='source_nonconvex_invest', inputs={bel: solph.Flow(
+            summed_max=2.3, variable_costs=25, max=0.8,
+            investment=solph.Investment(ep_costs=500, maximum=1234,
+                                        offset=34, nonconvex=True))})
+        self.compare_lp_files('flow_invest_with_offset_no_minimum.lp')
