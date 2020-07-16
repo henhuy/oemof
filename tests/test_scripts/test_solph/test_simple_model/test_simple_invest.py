@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """ This example shows how to create an energysystem with oemof objects and
-solve it with the solph module.
+solve it with the solph module. Results are plotted with outputlib.
 
 Data: example_data.csv
 
@@ -10,25 +10,17 @@ by the contributors recorded in the version control history of the file,
 available from its original location
 oemof/tests/test_scripts/test_solph/test_simple_dispatch/test_simple_dispatch.py
 
-SPDX-License-Identifier: MIT
+SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-import os
-
-import pandas as pd
 from nose.tools import eq_
-from oemof.network.network import Node
-from oemof.solph import Bus
-from oemof.solph import EnergySystem
-from oemof.solph import Flow
-from oemof.solph import Investment
-from oemof.solph import Model
-from oemof.solph import Sink
-from oemof.solph import Source
-from oemof.solph import Transformer
-from oemof.solph import processing
-from oemof.solph import views
+import os
+import pandas as pd
+from oemof.solph import (Sink, Source, Transformer, Bus, Flow, Model,
+                         EnergySystem, Investment)
 from oemof.tools import economics
+from oemof.outputlib import processing, views
+from oemof.network import Node
 
 
 def test_dispatch_example(solver='cbc', periods=24*5):
@@ -58,21 +50,22 @@ def test_dispatch_example(solver='cbc', periods=24*5):
     # sources
     ep_wind = economics.annuity(capex=1000, n=20, wacc=0.05)
     wind = Source(label='wind', outputs={bel: Flow(
-                    fix=data['wind'],
+                    actual_value=data['wind'], fixed=True,
                     investment=Investment(ep_costs=ep_wind, existing=100))})
 
     ep_pv = economics.annuity(capex=1500, n=20, wacc=0.05)
     pv = Source(label='pv', outputs={bel: Flow(
-                    fix=data['pv'],
+                    actual_value=data['pv'], fixed=True,
                     investment=Investment(ep_costs=ep_pv, existing=80))})
 
     # demands (electricity/heat)
     demand_el = Sink(label='demand_elec', inputs={bel: Flow(nominal_value=85,
-                     fix=data['demand_el'])})
+                     actual_value=data['demand_el'], fixed=True)})
 
     demand_th = Sink(label='demand_therm',
                      inputs={bth: Flow(nominal_value=40,
-                                       fix=data['demand_th'])})
+                                       actual_value=data['demand_th'],
+                                       fixed=True)})
 
     # power plants
     pp_coal = Transformer(label='pp_coal',

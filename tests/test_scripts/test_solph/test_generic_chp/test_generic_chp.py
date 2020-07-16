@@ -9,17 +9,15 @@ by the contributors recorded in the version control history of the file,
 available from its original location
 oemof/tests/test_scripts/test_solph/test_generic_chp/test_generic_chp.py
 
-SPDX-License-Identifier: MIT
+SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-import os
-
-import oemof.solph as solph
-import pandas as pd
 from nose.tools import eq_
-from oemof.network.network import Node
-from oemof.solph import processing
-from oemof.solph import views
+import os
+import pandas as pd
+import oemof.solph as solph
+from oemof.network import Node
+from oemof.outputlib import processing, views
 
 
 def test_gen_chp():
@@ -47,7 +45,7 @@ def test_gen_chp():
                  outputs={bth: solph.Flow(variable_costs=1000)})
 
     solph.Sink(label='demand_th', inputs={bth: solph.Flow(
-               fix=data['demand_th'], nominal_value=200)})
+               fixed=True, actual_value=data['demand_th'], nominal_value=200)})
 
     # power
     bel = solph.Bus(label='bel')

@@ -31,19 +31,19 @@ by the contributors recorded in the version control history of the file,
 available from its original location oemof/tests/test_scripts/test_solph/
 test_storage_investment/test_storage_investment.py
 
-SPDX-License-Identifier: MIT
+SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-import logging
-import os
+from nose.tools import eq_
 from collections import namedtuple
 
 import oemof.solph as solph
+from oemof.network import Node
+from oemof.outputlib import processing, views
+
+import logging
+import os
 import pandas as pd
-from nose.tools import eq_
-from oemof.network.network import Node
-from oemof.solph import processing
-from oemof.solph import views
 
 
 class Label(namedtuple('solph_label', ['tag1', 'tag2', 'tag3'])):
@@ -81,8 +81,8 @@ def test_tuples_as_labels_example(filename="storage_investment.csv",
 
     solph.Sink(label=Label('sink', 'electricity', 'demand'),
                inputs={bel: solph.Flow(
-                   fix=data['demand_el'],
-                   nominal_value=1)})
+                   actual_value=data['demand_el'],
+                   fixed=True, nominal_value=1)})
 
     # Sources
     solph.Source(label=Label('source', 'natural_gas', 'commodity'),
@@ -91,13 +91,13 @@ def test_tuples_as_labels_example(filename="storage_investment.csv",
 
     solph.Source(label=Label('renewable', 'electricity', 'wind'),
                  outputs={bel: solph.Flow(
-                     fix=data['wind'],
-                     nominal_value=1000000)})
+                     actual_value=data['wind'],
+                     nominal_value=1000000, fixed=True)})
 
     solph.Source(label=Label('renewable', 'electricity', 'pv'),
                  outputs={bel: solph.Flow(
-                     fix=data['pv'], nominal_value=582000,
-                     )})
+                     actual_value=data['pv'], nominal_value=582000,
+                     fixed=True)})
 
     # Transformer
     solph.Transformer(
@@ -109,10 +109,10 @@ def test_tuples_as_labels_example(filename="storage_investment.csv",
     # Investment storage
     solph.components.GenericStorage(
         label=Label('storage', 'electricity', 'battery'),
-        nominal_storage_capacity=204685,
+        nominal_capacity=204685,
         inputs={bel: solph.Flow(variable_costs=10e10)},
         outputs={bel: solph.Flow(variable_costs=10e10)},
-        loss_rate=0.00, initial_storage_level=0,
+        capacity_loss=0.00, initial_capacity=0,
         invest_relation_input_capacity=1/6,
         invest_relation_output_capacity=1/6,
         inflow_conversion_factor=1, outflow_conversion_factor=0.8,
@@ -138,7 +138,7 @@ def test_tuples_as_labels_example(filename="storage_investment.csv",
     storage = es.groups['storage_electricity_battery']
     storage_node = views.node(results, storage)
     my_results['max_load'] = storage_node['sequences'].max()[
-        ((storage, None), 'storage_content')]
+        ((storage, None), 'capacity')]
     commodity_bus = views.node(results, 'bus_natural_gas_None')
 
     gas_usage = commodity_bus['sequences'][
@@ -170,9 +170,9 @@ def test_tuples_as_labels_example(filename="storage_investment.csv",
     # Problem results
     eq_(int(meta['problem']['Lower bound']), 37819254)
     eq_(int(meta['problem']['Upper bound']), 37819254)
-    eq_(meta['problem']['Number of variables'], 281)
-    eq_(meta['problem']['Number of constraints'], 163)
-    eq_(meta['problem']['Number of nonzeros'], 116)
+    eq_(meta['problem']['Number of variables'], 280)
+    eq_(meta['problem']['Number of constraints'], 162)
+    eq_(meta['problem']['Number of nonzeros'], 519)
     eq_(meta['problem']['Number of objectives'], 1)
     eq_(str(meta['problem']['Sense']), 'minimize')
 
